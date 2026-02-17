@@ -1,7 +1,7 @@
 <?php
 $host = "localhost";
-$user = "root";
-$pw = ""; 
+$user = "Admin";
+$pw = "Password"; 
 $db = "superworlds"; // เปลี่ยนเป็นชื่อ DB ของคุณ
 
 $conn = mysqli_connect($host, $user, $pw, $db);
@@ -11,4 +11,5 @@ if (!$conn) {
 }
 
 mysqli_set_charset($conn, "utf8");
+
 ?>
