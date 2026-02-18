@@ -15,7 +15,7 @@ if (isset($_SESSION['cart'])) {
 $is_logged_in = isset($_SESSION['user_id']);
 $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1);
 
-// --- 1. ส่วน Logic การดึงข้อมูลสินค้า (ปรับปรุงใหม่เพื่อให้กดหมวดหมู่แล้วขึ้นแน่นอน) ---
+// --- 1. Smart SQL Filter (แก้ปัญหาหมวดหมู่ไม่ขึ้น) ---
 $where_clause = " WHERE 1 ";
 
 if ($search) {
@@ -23,35 +23,23 @@ if ($search) {
 }
 
 if ($cat) {
-    // จัดการหมวดหมู่ รองเท้า
+    // ปรับ Logic ให้รองรับทั้งคำว่า "ชาย" และ "ผู้ชาย" ตามภาพ
     if (strpos($cat, 'รองเท้า') !== false) {
         $where_clause .= " AND p_category LIKE '%รองเท้า%' ";
-        if (strpos($cat, 'ชาย') !== false) {
-            $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') ";
-        } elseif (strpos($cat, 'หญิง') !== false) {
-            $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') ";
-        }
-    } 
-    // จัดการหมวดหมู่ เสื้อผ้า
-    elseif (strpos($cat, 'เสื้อผ้า') !== false) {
+        if (strpos($cat, 'ชาย') !== false) { $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') "; }
+        elseif (strpos($cat, 'หญิง') !== false) { $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') "; }
+    } elseif (strpos($cat, 'เสื้อผ้า') !== false) {
         $where_clause .= " AND p_category LIKE '%เสื้อผ้า%' ";
-        if (strpos($cat, 'ชาย') !== false) {
-            $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') ";
-        } elseif (strpos($cat, 'หญิง') !== false) {
-            $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') ";
-        }
-    } 
-    // จัดการ Tag อื่นๆ ที่พิมพ์เพิ่มเองอิสระ หรือเลือกจาก Gear
-    else {
+        if (strpos($cat, 'ชาย') !== false) { $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') "; }
+        elseif (strpos($cat, 'หญิง') !== false) { $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') "; }
+    } else {
         $where_clause .= " AND (p_category LIKE '%$cat%' OR p_gender LIKE '%$cat%') ";
     }
 }
 
-// นำเงื่อนไขไปใช้ทั้งการนับจำนวน
+// นำเงื่อนไขไปใช้ทั้งการนับจำนวนและการแสดงผล
 $count_res = mysqli_query($conn, "SELECT COUNT(*) as total FROM products " . $where_clause);
 $total_items = mysqli_fetch_array($count_res)['total'];
-
-// คำสั่ง SQL สำหรับดึงข้อมูลแสดงผล
 $sql = "SELECT * FROM products " . $where_clause . " ORDER BY p_id DESC";
 $result = mysqli_query($conn, $sql);
 ?>
@@ -70,7 +58,7 @@ $result = mysqli_query($conn, $sql);
         body { font-family: 'Kanit', sans-serif; background-color: var(--ss-gray); color: #333; margin: 0; padding: 0; overflow-x: hidden; }
         
         /* --- Floating Admin Sidebar --- */
-        .admin-sidebar { position: fixed; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); padding: 15px 10px; border-radius: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
+        .admin-sidebar { position: fixed; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); padding: 15px 10px; border-radius: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .admin-btn { width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; color: #fff; text-decoration: none; border-radius: 12px; transition: 0.3s; position: relative; }
         .admin-btn:hover { background: var(--ss-red); transform: scale(1.1); }
         .admin-tooltip { position: absolute; left: 60px; background: #000; color: #fff; padding: 5px 12px; border-radius: 8px; font-size: 0.75rem; white-space: nowrap; visibility: hidden; opacity: 0; transition: 0.3s; }
@@ -80,7 +68,7 @@ $result = mysqli_query($conn, $sql);
         .navbar { background-color: var(--ss-dark) !important; padding: 15px 0; border-bottom: 3px solid var(--ss-red); }
         .navbar-brand { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; }
 
-        /* --- Sidebar Category (Fixed Scroll) --- */
+        /* --- Sidebar Category --- */
         .cat-group { display: flex; flex-direction: column; gap: 5px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); max-height: 75vh; overflow-y: auto; }
         .cat-group::-webkit-scrollbar { width: 4px; }
         .cat-group::-webkit-scrollbar-thumb { background: #eee; border-radius: 10px; }
@@ -89,12 +77,15 @@ $result = mysqli_query($conn, $sql);
         .filter-btn:hover { background: var(--ss-gray); color: var(--ss-red); transform: translateX(5px); }
         .filter-btn.active { background: var(--ss-dark); color: #fff; font-weight: 600; }
 
-        /* --- Search Bar --- */
+        /* --- Search UI (แก้ไขภาพ) --- */
         .search-container { max-width: 800px; margin: 0 auto; position: relative; }
-        .search-input-group { background: white; border-radius: 50px; padding: 8px 8px 8px 25px; display: flex; align-items: center; border: 2px solid #eee; }
+        .search-input-group { background: white; border-radius: 50px; padding: 8px 8px 8px 25px; display: flex; align-items: center; border: 2px solid #eee; transition: 0.3s; }
+        .search-input-group:focus-within { border-color: var(--ss-red); box-shadow: 0 0 15px rgba(225,33,40,0.1); }
         .search-input-group input { border: none; outline: none; flex: 1; font-size: 1rem; }
-        .btn-search { background: var(--ss-dark); color: white; border-radius: 50px; width: 45px; height: 45px; border: none; }
-        #search_results { width: 100%; display: none; background: white; z-index: 9990; box-shadow: 0 25px 60px rgba(0,0,0,0.2); position: absolute; margin-top: 15px; border-radius: 20px; overflow: hidden; }
+        #search_results { width: 100%; display: none; background: white; z-index: 9990; box-shadow: 0 25px 60px rgba(0,0,0,0.2); position: absolute; margin-top: 15px; border-radius: 25px; overflow: hidden; border: 1px solid #eee; padding: 20px; }
+        
+        .pop-search-tag { display: inline-block; padding: 6px 15px; background: #f0f2f5; border-radius: 50px; color: #555; text-decoration: none; font-size: 0.8rem; margin: 0 5px 8px 0; transition: 0.3s; }
+        .pop-search-tag:hover { background: var(--ss-dark); color: white; }
 
         /* --- Product Card & Tags --- */
         .product-card { border: none; border-radius: 25px; transition: 0.4s; background: #fff; height: 100%; border: 1px solid #f0f0f0; position: relative; overflow: hidden; }
@@ -102,7 +93,6 @@ $result = mysqli_query($conn, $sql);
         .product-img-wrapper { padding: 30px; height: 260px; display: flex; align-items: center; justify-content: center; position: relative; }
         .product-img { max-height: 100%; max-width: 100%; object-fit: contain; }
         
-        /* Tag ปรับปรุงไม่ให้ทับซ้อน */
         .category-tag { position: absolute; top: 15px; left: 15px; padding: 4px 12px; border-radius: 50px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; z-index: 5; max-width: 85%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .tag-men { background: #111; color: #fff; }
         .tag-women { background: #ff4d94; color: #fff; }
@@ -155,13 +145,25 @@ $result = mysqli_query($conn, $sql);
 
 <div class="bg-white py-5 border-bottom">
     <div class="container text-center">
-        <h6 class="text-danger fw-bold text-uppercase mb-3" style="letter-spacing: 3px;">Search our collection</h6>
         <form action="index.php" method="get" id="searchForm" class="search-container">
             <div class="search-input-group">
                 <input type="text" name="q" id="search_input" placeholder="ค้นหาแบรนด์หรือสินค้า..." value="<?php echo htmlspecialchars($search); ?>" autocomplete="off">
                 <button type="submit" class="btn-search"><i class="fas fa-search"></i></button>
             </div>
-            <div id="search_results" style="text-align: left;"></div>
+            <div id="search_results" class="text-start">
+                <h6 class="fw-bold mb-3"><i class="fas fa-fire text-danger me-2"></i> คำค้นหายอดนิยม</h6>
+                <div class="mb-4">
+                    <a href="index.php?q=รองเท้า" class="pop-search-tag">รองเท้า</a>
+                    <a href="index.php?q=Nike" class="pop-search-tag">Nike Air</a>
+                    <a href="index.php?q=เสื้อ" class="pop-search-tag">เสื้อฟุตบอล</a>
+                    <a href="index.php?q=Adidas" class="pop-search-tag">Adidas</a>
+                    <a href="index.php?q=แร็คเกต" class="pop-search-tag">อุปกรณ์กีฬา</a>
+                </div>
+                <hr>
+                <div id="ajax_search_content">
+                    <p class="text-muted small">พิมพ์เพื่อค้นหาสินค้าแบบเรียลไทม์...</p>
+                </div>
+            </div>
         </form>
     </div>
 </div>
@@ -173,26 +175,20 @@ $result = mysqli_query($conn, $sql);
                 <div class="cat-group">
                     <div class="cat-header">หมวดหมู่สินค้า</div>
                     <a href="index.php" class="filter-btn <?= ($cat == '') ? 'active' : '' ?>">ทั้งหมด <i class="fas fa-th-large"></i></a>
-
                     <?php
                     $groups = ['SHOES' => 'รองเท้า', 'APPAREL' => 'เสื้อผ้า', 'GEAR' => 'อุปกรณ์'];
                     foreach ($groups as $key => $label):
-                    ?>
-                        <div class="cat-header mt-3"><?= $label ?></div>
-                        <?php
+                        echo "<div class='cat-header mt-3'>$label</div>";
                         $cat_query = mysqli_query($conn, "SELECT * FROM categories WHERE cat_group = '$key'");
                         while ($c_row = mysqli_fetch_array($cat_query)):
                             $full_cat_name = ($key == 'GEAR') ? $c_row['cat_name'] : $label . $c_row['cat_name'];
-                        ?>
-                            <a href="index.php?cat=<?= urlencode($full_cat_name) ?>" class="filter-btn <?= ($cat == $full_cat_name) ? 'active' : '' ?>">
-                                <?= $c_row['cat_name'] ?>
-                            </a>
-                        <?php endwhile; ?>
-                    <?php endforeach; ?>
-
+                    ?>
+                        <a href="index.php?cat=<?= urlencode($full_cat_name) ?>" class="filter-btn <?= ($cat == $full_cat_name) ? 'active' : '' ?>">
+                            <?= $c_row['cat_name'] ?>
+                        </a>
+                    <?php endwhile; endforeach; ?>
                     <?php if($is_admin): ?>
-                        <hr>
-                        <a href="admin_categories.php" class="btn btn-sm btn-outline-dark w-100 rounded-pill"><i class="fas fa-edit me-1"></i> แก้ไข Tag ทั้งหมด</a>
+                        <hr><a href="admin_categories.php" class="btn btn-sm btn-outline-dark w-100 rounded-pill"><i class="fas fa-edit me-1"></i> แก้ไข Tag</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -200,102 +196,69 @@ $result = mysqli_query($conn, $sql);
 
         <div class="col-lg-9">
             <div class="d-flex justify-content-between align-items-end mb-4 px-2">
-                <h2 class="fw-bold m-0"><?php echo ($cat != '') ? htmlspecialchars($cat) : 'สินค้าแนะนำ'; ?></h2>
+                <h2 class="fw-bold m-0"><?php echo ($cat != '') ? htmlspecialchars($cat) : 'สินค้าทั้งหมด'; ?></h2>
                 <span class="text-muted small">พบ <?php echo $total_items; ?> รายการ</span>
             </div>
-
             <div class="row g-4">
-                <?php
-                if(mysqli_num_rows($result) > 0) {
-                    while($row = mysqli_fetch_array($result)) {
+                <?php if(mysqli_num_rows($result) > 0): while($row = mysqli_fetch_array($result)): 
                         $gender = $row['p_gender'] ?? 'Unisex';
                         $tag_class = ($gender == 'ชาย' || $gender == 'ผู้ชาย') ? 'tag-men' : (($gender == 'หญิง' || $gender == 'ผู้หญิง') ? 'tag-women' : 'tag-default');
                 ?>
                     <div class="col-6 col-md-4">
                         <div class="card product-card">
                             <span class="category-tag <?php echo $tag_class; ?>"><?php echo $gender; ?></span>
-                            <div class="product-img-wrapper">
-                                <a href="product_detail.php?id=<?php echo $row['p_id']; ?>">
-                                    <img src="<?php echo $row['p_image']; ?>" class="product-img" onerror="this.src='https://placehold.co/400x400'">
-                                </a>
-                            </div>
+                            <div class="product-img-wrapper"><a href="product_detail.php?id=<?= $row['p_id'] ?>"><img src="<?= $row['p_image'] ?>" class="product-img" onerror="this.src='https://placehold.co/400x400'"></a></div>
                             <div class="card-body p-4 pt-0">
-                                <div class="text-muted small fw-bold text-uppercase"><?php echo $row['p_brand']; ?></div>
-                                <h5 class="fw-bold my-2" style="font-size:0.95rem; height:45px; overflow:hidden;"><?php echo $row['p_name']; ?></h5>
-                                <div class="price-tag">฿<?php echo number_format($row['p_price']); ?></div>
-                                <button type="button" class="btn btn-add-cart add-to-cart-btn" data-id="<?php echo $row['p_id']; ?>">
-                                    <i class="fas fa-cart-plus me-2"></i> ใส่ตะกร้า
-                                </button>
+                                <div class="text-muted small fw-bold text-uppercase"><?= $row['p_brand'] ?></div>
+                                <h5 class="fw-bold my-2" style="font-size:0.95rem; height:45px; overflow:hidden;"><?= $row['p_name'] ?></h5>
+                                <div class="price-tag">฿<?= number_format($row['p_price']) ?></div>
+                                <button type="button" class="btn btn-add-cart add-to-cart-btn" data-id="<?= $row['p_id'] ?>"><i class="fas fa-cart-plus me-2"></i> ใส่ตะกร้า</button>
                             </div>
                         </div>
                     </div>
-                <?php } } else { ?>
-                    <div class="col-12 text-center py-5 opacity-50">
-                        <i class="fas fa-box-open fa-3x mb-3"></i>
-                        <h4>ไม่พบสินค้าในหมวดหมู่นี้</h4>
-                    </div>
-                <?php } ?>
+                <?php endwhile; else: ?>
+                    <div class="col-12 text-center py-5 opacity-50"><i class="fas fa-box-open fa-3x mb-3"></i><h4>ไม่พบสินค้าในหมวดหมู่นี้</h4></div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 </div>
 
 <footer class="py-5 text-center text-white" style="background:#111;">
-    <div class="container">
-        <h4 class="fw-bold mb-3">SUPER<span class="text-danger">WORLDS</span></h4>
-        <p class="small opacity-50">© 2026 SUPERWORLDS STORE. GLOBAL QUALITY GEAR.</p>
-    </div>
+    <div class="container"><h4 class="fw-bold mb-3">SUPER<span class="text-danger">WORLDS</span></h4><p class="small opacity-50">© 2026 SUPERWORLDS STORE.</p></div>
 </footer>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 $(document).ready(function(){
-    const isLoggedIn = <?php echo $is_logged_in ? 'true' : 'false'; ?>;
-
     function performSearch(query) {
-        if(query.length < 1) { 
-            $('#search_results').fadeOut(); 
-            return; 
-        }
+        if(query.length < 1) { $('#ajax_search_content').html('<p class="text-muted small">พิมพ์เพื่อค้นหา...</p>'); return; }
         $.ajax({
-            url: "fetch_search.php",
-            method: "POST",
-            data: { query: query },
-            success: function(data) {
-                $('#search_results').fadeIn().html(data);
-            }
+            url: "fetch_search.php", method: "POST", data: { query: query },
+            success: function(data) { $('#ajax_search_content').html(data); }
         });
     }
 
-    // แก้ไข: ให้ Search แสดงทันทีที่ Focus (คลิก) หากมีคำค้นหาอยู่
-    $('#search_input').on('focus', function(){
-        const val = $(this).val();
-        if(val.length >= 1) performSearch(val);
-    });
-
-    // ค้นหาขณะพิมพ์
-    $('#search_input').on('keyup', function(){ 
+    // แก้ไข: Focus ปุ๊บ เด้งปั๊บ!
+    $('#search_input').on('focus', function(){ 
+        $('#search_results').fadeIn(); 
         performSearch($(this).val()); 
     });
 
-    // ปิดผลการค้นหาเมื่อคลิกข้างนอก
-    $(document).click(function(e) { 
-        if (!$(e.target).closest('#searchForm').length) $('#search_results').fadeOut(); 
-    });
+    $('#search_input').on('keyup', function(){ performSearch($(this).val()); });
+    $(document).click(function(e) { if (!$(e.target).closest('#searchForm').length) $('#search_results').fadeOut(); });
 
-    // ระบบเพิ่มลงตะกร้า
     $('.add-to-cart-btn').click(function(e) {
-        if (!isLoggedIn) {
+        if (!<?= $is_logged_in ? 'true' : 'false' ?>) {
             Swal.fire({ title: 'กรุณาเข้าสู่ระบบ', icon: 'warning', confirmButtonColor: '#111' }).then(r => { if(r.isConfirmed) window.location.href='login.php'; });
             return;
         }
-        const btn = $(this);
-        const p_id = btn.data('id');
+        const p_id = $(this).data('id');
         $.ajax({
             url: 'cart_action.php', type: 'GET', data: { id: p_id, action: 'add', ajax: 1 },
             success: function(res) {
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เพิ่มลงตะกร้าแล้ว', showConfirmButton: false, timer: 1500 });
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เพิ่มแล้ว', showConfirmButton: false, timer: 1500 });
                 $('#cart-badge').text(res);
             }
         });
