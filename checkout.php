@@ -48,15 +48,19 @@ $qr_url = "https://promptpay.io/$pp_id/$grand_total.png";
         .payment-option.active { border-color: var(--ss-red); background-color: #fff5f5; }
         .payment-option input[type="radio"] { position: absolute; opacity: 0; }
         
-        /* QR Code Styling */
+        /* QR & Slip Styling */
         #qr_container { display: block; text-align: center; background: white; padding: 25px; border-radius: 20px; border: 1px solid #eee; margin-top: 15px; animation: fadeIn 0.5s; }
-        .qr-img { width: 220px; height: 220px; border: 5px solid #fff; box-shadow: 0 5px 20px rgba(0,0,0,0.1); border-radius: 15px; }
+        .qr-img { width: 200px; height: 200px; border: 5px solid #fff; box-shadow: 0 5px 20px rgba(0,0,0,0.1); border-radius: 15px; }
+        
+        .slip-upload-box { background: #f8f9fa; border: 2px dashed #ddd; border-radius: 20px; padding: 20px; text-align: center; margin-top: 20px; transition: 0.3s; }
+        .slip-upload-box:hover { border-color: var(--ss-red); background: #fff5f5; }
         
         .btn-confirm { background: var(--ss-dark); color: white; border-radius: 50px; padding: 20px; font-weight: 800; border: none; transition: 0.4s; letter-spacing: 1px; font-size: 1.1rem; width: 100%; }
         .btn-confirm:hover { background: var(--ss-red); transform: translateY(-5px); box-shadow: 0 15px 30px rgba(225,33,40,0.3); color: white; }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .error-hint { font-size: 0.8rem; color: var(--ss-red); display: none; margin-top: 6px; font-weight: 600; }
+        #slip_preview { max-width: 150px; border-radius: 10px; display: none; margin: 15px auto 0; }
     </style>
 </head>
 <body class="py-5">
@@ -66,39 +70,38 @@ $qr_url = "https://promptpay.io/$pp_id/$grand_total.png";
         <a href="cart.php" class="text-decoration-none text-muted fw-bold small">
             <i class="fas fa-arrow-left me-2"></i> กลับไปยังตะกร้า
         </a>
-        <h2 class="fw-bold m-0">ยืนยันการสั่งซื้อ</h2>
+        <h2 class="fw-bold m-0">ชำระเงิน</h2>
         <div style="width: 100px;"></div> 
     </div>
 
     <div class="row g-4">
         <div class="col-lg-7">
             <div class="card checkout-card p-4 p-md-5">
-                <form action="save_order.php" method="POST" id="checkoutForm">
+                <form action="save_order.php" method="POST" id="checkoutForm" enctype="multipart/form-data">
                     <div class="d-flex align-items-center mb-4">
                         <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 35px; height: 35px; font-weight: 800;">1</div>
-                        <h4 class="fw-bold m-0">ข้อมูลการจัดส่ง</h4>
+                        <h4 class="fw-bold m-0">ที่อยู่จัดส่ง</h4>
                     </div>
 
                     <div class="row g-4">
                         <div class="col-md-6">
-                            <label class="form-label">ชื่อ-นามสกุล ผู้รับ</label>
+                            <label class="form-label">ชื่อผู้รับ</label>
                             <input type="text" id="fullname" name="fullname" class="form-control" value="<?php echo htmlspecialchars($user['fullname'] ?? ''); ?>" required>
-                            <div id="nameError" class="error-hint">กรุณากรอกชื่อให้ถูกต้อง</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">เบอร์โทรศัพท์</label>
                             <input type="text" id="phone" name="phone" class="form-control" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" maxlength="10" required>
-                            <div id="phoneError" class="error-hint">เบอร์โทรศัพท์ต้องครบ 10 หลัก</div>
+                            <div id="phoneError" class="error-hint">กรุณากรอกเบอร์โทร 10 หลัก</div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">ที่อยู่จัดส่งโดยละเอียด</label>
+                            <label class="form-label">ที่อยู่โดยละเอียด</label>
                             <textarea name="address" class="form-control" rows="3" required><?php echo htmlspecialchars($user['address'] ?? ''); ?></textarea>
                         </div>
                     </div>
 
                     <div class="d-flex align-items-center mt-5 mb-4">
                         <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 35px; height: 35px; font-weight: 800;">2</div>
-                        <h4 class="fw-bold m-0">วิธีการชำระเงิน</h4>
+                        <h4 class="fw-bold m-0">ช่องทางการชำระเงิน</h4>
                     </div>
 
                     <label class="payment-option active w-100" for="pay_transfer">
@@ -106,26 +109,24 @@ $qr_url = "https://promptpay.io/$pp_id/$grand_total.png";
                         <div class="d-flex align-items-center mb-3">
                             <div class="me-4 text-primary"><i class="fas fa-qrcode fa-3x"></i></div>
                             <div class="flex-grow-1">
-                                <h6 class="fw-bold mb-1">สแกนจ่ายผ่าน QR PromptPay</h6>
-                                <small class="text-muted">ยอดชำระอัตโนมัติ สแกนได้ทุกธนาคาร</small>
+                                <h6 class="fw-bold mb-1">โอนเงิน / สแกน QR Code</h6>
+                                <small class="text-muted">ชำระเงินตอนนี้และแนบสลิปเพื่อยืนยัน</small>
                             </div>
                             <i class="fas fa-check-circle text-danger fs-4 check-icon"></i>
                         </div>
 
-                        <div id="qr_container" style="display: block;">
+                        <div id="qr_container">
                             <div class="mb-3">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c5/PromptPay-logo.png" 
-                                     height="45" 
-                                     class="mb-2" 
-                                     alt="PromptPay Logo"
-                                     onerror="this.src='https://promptpay.io/static/img/promptpay_logo.png'">
-                                
-                                <p class="small text-muted mb-3">สแกนด้วย Mobile Banking ทุกธนาคาร</p>
-                                
-                                <img src="<?php echo $qr_url; ?>" class="qr-img border shadow-sm" alt="Payment QR Code">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c5/PromptPay-logo.png" height="45" class="mb-2" alt="PromptPay Logo">
+                                <p class="small text-muted mb-3">สแกนเพื่อชำระเงิน ฿<?php echo number_format($grand_total, 2); ?></p>
+                                <img src="<?php echo $qr_url; ?>" class="qr-img border shadow-sm">
                             </div>
-                            <div class="alert alert-warning py-2 small mb-0 rounded-4" style="background-color: #fff9db; border-color: #fff3bf;">
-                                <i class="fas fa-info-circle me-1 text-warning"></i> เมื่อสแกนจ่ายสำเร็จ กรุณากดยืนยันด้านล่าง
+
+                            <div class="slip-upload-box">
+                                <label class="fw-bold small d-block mb-2 text-dark"><i class="fas fa-file-invoice-dollar me-1"></i> อัปโหลดสลิปโอนเงิน</label>
+                                <input type="file" name="payment_slip" id="payment_slip" class="form-control form-control-sm" accept="image/*">
+                                <img id="slip_preview" src="#" alt="Slip Preview">
+                                <div id="slipError" class="error-hint">กรุณาแนบสลิปโอนเงินก่อนยืนยัน</div>
                             </div>
                         </div>
                     </label>
@@ -136,15 +137,15 @@ $qr_url = "https://promptpay.io/$pp_id/$grand_total.png";
                             <div class="me-4 text-success"><i class="fas fa-shipping-fast fa-3x"></i></div>
                             <div class="flex-grow-1">
                                 <h6 class="fw-bold mb-1">เก็บเงินปลายทาง (COD)</h6>
-                                <small class="text-muted">ชำระเงินกับเจ้าหน้าที่เมื่อได้รับสินค้า</small>
+                                <small class="text-muted">ชำระเงินสดเมื่อได้รับสินค้า</small>
                             </div>
                             <i class="fas fa-check-circle text-muted fs-4 check-icon"></i>
                         </div>
                     </label>
 
                     <input type="hidden" name="total_amount" value="<?php echo $grand_total; ?>">
-                    <button class="btn btn-confirm shadow-sm mt-4" type="submit">
-                        ยืนยันและส่งคำสั่งซื้อ ฿<?php echo number_format($grand_total); ?>
+                    <button class="btn btn-confirm shadow-sm mt-4" type="submit" id="submitBtn">
+                        ยืนยันการสั่งซื้อ ฿<?php echo number_format($grand_total); ?>
                     </button>
                 </form>
             </div>
@@ -153,7 +154,7 @@ $qr_url = "https://promptpay.io/$pp_id/$grand_total.png";
         <div class="col-lg-5">
             <div class="card summary-card shadow-sm p-4 border-0">
                 <h5 class="fw-bold mb-4">สรุปออเดอร์</h5>
-                <div class="order-items mb-4" style="max-height: 400px; overflow-y: auto;">
+                <div class="order-items mb-4" style="max-height: 350px; overflow-y: auto;">
                     <?php 
                     foreach ($_SESSION['cart'] as $id => $qty) {
                         $res = mysqli_query($conn, "SELECT p_name, p_price, p_image FROM products WHERE p_id = '$id'");
@@ -165,7 +166,7 @@ $qr_url = "https://promptpay.io/$pp_id/$grand_total.png";
                             <img src="<?php echo $row['p_image']; ?>" class="w-100 h-100 object-fit-contain" onerror="this.src='https://placehold.co/100x100'">
                         </div>
                         <div class="flex-grow-1">
-                            <h6 class="fw-bold mb-0 small" style="display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;"><?php echo $row['p_name']; ?></h6>
+                            <h6 class="fw-bold mb-0 small"><?php echo $row['p_name']; ?></h6>
                             <small class="text-muted">x<?php echo $qty; ?></small>
                         </div>
                         <div class="text-end">
@@ -174,7 +175,7 @@ $qr_url = "https://promptpay.io/$pp_id/$grand_total.png";
                     </div>
                     <?php } ?>
                 </div>
-                <div class="d-flex justify-content-between align-items-center p-3 rounded-4" style="background: #f8f9fa;">
+                <div class="d-flex justify-content-between align-items-center p-3 rounded-4" style="background: #f8f9fa; border: 1px solid #eee;">
                     <span class="fw-bold">ยอดชำระสุทธิ</span>
                     <span class="fw-bold h4 text-danger mb-0">฿<?php echo number_format($grand_total); ?></span>
                 </div>
@@ -186,7 +187,10 @@ $qr_url = "https://promptpay.io/$pp_id/$grand_total.png";
 <script>
     const options = document.querySelectorAll('.payment-option');
     const qrContainer = document.getElementById('qr_container');
+    const slipInput = document.getElementById('payment_slip');
+    const slipPreview = document.getElementById('slip_preview');
 
+    // สลับการแสดงผล QR และ สลิป
     options.forEach(opt => {
         opt.addEventListener('click', function() {
             options.forEach(o => {
@@ -195,24 +199,48 @@ $qr_url = "https://promptpay.io/$pp_id/$grand_total.png";
             });
             this.classList.add('active');
             this.querySelector('.check-icon').classList.replace('text-muted', 'text-danger');
-
-            // แสดง/ซ่อน QR Code ตามการเลือก
             qrContainer.style.display = (this.getAttribute('for') === 'pay_transfer') ? 'block' : 'none';
         });
     });
 
-    // ตรวจสอบเบอร์โทรให้พิมพ์ได้เฉพาะตัวเลข
-    document.getElementById('phone').addEventListener('input', function(e) {
-        this.value = this.value.replace(/[^0-9]/g, '');
-    });
+    // Preview สลิปเมื่อเลือกไฟล์
+    slipInput.onchange = evt => {
+        const [file] = slipInput.files;
+        if (file) {
+            slipPreview.src = URL.createObjectURL(file);
+            slipPreview.style.display = 'block';
+            document.getElementById('slipError').style.display = 'none';
+        }
+    }
 
-    // Form Validation
+    // ตรวจสอบก่อนส่งฟอร์ม
     document.getElementById('checkoutForm').addEventListener('submit', function(e) {
-        const phone = document.getElementById('phone');
-        if (phone.value.length !== 10) {
-            e.preventDefault();
+        let isValid = true;
+        
+        // เช็คเบอร์โทร
+        if (document.getElementById('phone').value.length !== 10) {
             document.getElementById('phoneError').style.display = 'block';
-            phone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            isValid = false;
+        }
+
+        // เช็คสลิป (เฉพาะถ้าเลือกโอนเงิน)
+        const isTransfer = document.getElementById('pay_transfer').checked;
+        if (isTransfer && slipInput.files.length === 0) {
+            document.getElementById('slipError').style.display = 'block';
+            isValid = false;
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'ข้อมูลไม่ครบถ้วน',
+                text: 'กรุณาตรวจสอบเบอร์โทรศัพท์ หรือแนบสลิปโอนเงินให้เรียบร้อย',
+                confirmButtonColor: '#111'
+            });
+        } else {
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> กำลังบันทึกข้อมูล...';
         }
     });
 </script>
