@@ -154,20 +154,27 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
             <div class="sticky-top" style="top: 110px;">
                 <div class="cat-group">
                     <div class="cat-header">หมวดหมู่สินค้า</div>
-                    <a href="index.php" class="filter-btn <?php echo ($cat == '') ? 'active' : ''; ?>">ทั้งหมด <i class="fas fa-th-large"></i></a>
-                    
-                    <div class="cat-header mt-3">รองเท้า (Shoes)</div>
-                    <a href="index.php?cat=รองเท้าชาย" class="filter-btn <?php echo ($cat == 'รองเท้าชาย') ? 'active' : ''; ?>">ผู้ชาย</a>
-                    <a href="index.php?cat=รองเท้าหญิง" class="filter-btn <?php echo ($cat == 'รองเท้าหญิง') ? 'active' : ''; ?>">ผู้หญิง</a>
-                    <a href="index.php?cat=รองเท้าวิ่ง" class="filter-btn <?php echo ($cat == 'รองเท้าวิ่ง') ? 'active' : ''; ?>">รองเท้าวิ่ง</a>
+                    <a href="index.php" class="filter-btn <?= ($cat == '') ? 'active' : '' ?>">ทั้งหมด <i class="fas fa-th-large"></i></a>
 
-                    <div class="cat-header mt-3">เสื้อผ้า (Apparel)</div>
-                    <a href="index.php?cat=เสื้อผ้าชาย" class="filter-btn <?php echo ($cat == 'เสื้อผ้าชาย') ? 'active' : ''; ?>">ผู้ชาย</a>
-                    <a href="index.php?cat=เสื้อผ้าหญิง" class="filter-btn <?php echo ($cat == 'เสื้อผ้าหญิง') ? 'active' : ''; ?>">ผู้หญิง</a>
-                    <a href="index.php?cat=ชุดวอร์ม" class="filter-btn <?php echo ($cat == 'ชุดวอร์ม') ? 'active' : ''; ?>">ชุดวอร์ม</a>
-
-                    <div class="cat-header mt-3">อุปกรณ์</div>
-                    <a href="index.php?cat=อุปกรณ์กีฬา" class="filter-btn <?php echo ($cat == 'อุปกรณ์กีฬา') ? 'active' : ''; ?>">อุปกรณ์เสริม</a>
+                    <?php
+                    // ดึงกลุ่มหมวดหมู่หลักออกมา
+                    $groups = ['SHOES' => 'รองเท้า', 'APPAREL' => 'เสื้อผ้า', 'GEAR' => 'อุปกรณ์'];
+                    foreach ($groups as $key => $label):
+                    ?>
+                        <div class="cat-header mt-3"><?= $label ?></div>
+                        <?php
+                        // ดึง Tag ย่อยที่แอดมินสร้างไว้ในกลุ่มนั้นๆ จากตาราง categories
+                        $cat_query = mysqli_query($conn, "SELECT * FROM categories WHERE cat_group = '$key'");
+                        if($cat_query) {
+                            while ($c_row = mysqli_fetch_array($cat_query)):
+                                $full_cat_name = ($key == 'GEAR') ? $c_row['cat_name'] : $label . $c_row['cat_name'];
+                            ?>
+                                <a href="index.php?cat=<?= $full_cat_name ?>" class="filter-btn <?= ($cat == $full_cat_name) ? 'active' : '' ?>">
+                                    <?= $c_row['cat_name'] ?>
+                                </a>
+                            <?php endwhile;
+                        } ?>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>
@@ -176,7 +183,6 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
             <div class="d-flex justify-content-between align-items-end mb-4">
                 <h2 class="fw-bold m-0"><?php echo ($cat != '') ? str_replace('ชาย', 'ผู้ชาย', str_replace('หญิง', 'ผู้หญิง', $cat)) : 'สินค้าทั้งหมด'; ?></h2>
                 <span class="text-muted small">พบ <?php 
-                    // SQL นับจำนวน (ฉบับแก้ไขให้รองรับหมวดหมู่ย่อยอัตโนมัติ)
                     $count_q = "SELECT COUNT(*) as total FROM products WHERE 1";
                     if ($search) { $count_q .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%')"; }
                     if ($cat) {
@@ -193,29 +199,15 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
 
             <div class="row g-4">
                 <?php
-                // --- ส่วนดึงข้อมูลสินค้าใน index.php (ฉบับแก้ไขให้รองรับหมวดหมู่ย่อยอัตโนมัติ) ---
                 $sql = "SELECT * FROM products WHERE 1";
-
-                if ($search) { 
-                    $sql .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%')"; 
-                }
-
+                if ($search) { $sql .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%')"; }
                 if ($cat) {
-                    // แก้ไข Logic ตรงนี้ให้ตรวจสอบทั้ง 2 คอลัมน์
-                    if ($cat == 'รองเท้าชาย') {
-                        $sql .= " AND p_category = 'รองเท้า' AND p_gender = 'ชาย'";
-                    } elseif ($cat == 'รองเท้าหญิง') {
-                        $sql .= " AND p_category = 'รองเท้า' AND p_gender = 'หญิง'";
-                    } elseif ($cat == 'เสื้อผ้าชาย') {
-                        $sql .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'ชาย'";
-                    } elseif ($cat == 'เสื้อผ้าหญิง') {
-                        $sql .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'หญิง'";
-                    } else {
-                        // สำหรับหมวดหมู่อื่นๆ เช่น อุปกรณ์กีฬา
-                        $sql .= " AND p_category LIKE '%$cat%'";
-                    }
+                    if ($cat == 'รองเท้าชาย') { $sql .= " AND p_category = 'รองเท้า' AND p_gender = 'ชาย'"; }
+                    elseif ($cat == 'รองเท้าหญิง') { $sql .= " AND p_category = 'รองเท้า' AND p_gender = 'หญิง'"; }
+                    elseif ($cat == 'เสื้อผ้าชาย') { $sql .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'ชาย'"; }
+                    elseif ($cat == 'เสื้อผ้าหญิง') { $sql .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'หญิง'"; }
+                    else { $sql .= " AND p_category LIKE '%$cat%'"; }
                 }
-
                 $sql .= " ORDER BY p_id DESC";
                 $result = mysqli_query($conn, $sql);
                 
@@ -263,16 +255,11 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
 <script>
 $(document).ready(function(){
     const isLoggedIn = <?php echo $is_logged_in ? 'true' : 'false'; ?>;
-
     function performSearch(query) {
         if(query.length < 1) { $('#search_results').fadeOut(); return; }
         $.ajax({
-            url: "fetch_search.php",
-            method: "POST",
-            data: { query: query },
-            success: function(data) {
-                $('#search_results').fadeIn().html(data);
-            }
+            url: "fetch_search.php", method: "POST", data: { query: query },
+            success: function(data) { $('#search_results').fadeIn().html(data); }
         });
     }
     $('#search_input').on('keyup focus', function(){ performSearch($(this).val()); });
