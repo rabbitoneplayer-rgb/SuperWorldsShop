@@ -120,16 +120,12 @@ $result = mysqli_query($conn, $sql);
                 </div>
                 <div class="row">
                     <div class="col-6 mb-3">
-                        <label class="form-label-custom">หมวดหมู่ (พิมพ์ Tag เองได้)</label>
+                        <label class="form-label-custom">หมวดหมู่ (พิมพ์เพิ่มเองได้)</label>
                         <input type="text" name="p_category" class="form-control form-control-custom" placeholder="เช่น กระเป๋า, แร็คเกต" required>
                     </div>
                     <div class="col-6 mb-3">
-                        <label class="form-label-custom">สินค้าสำหรับ</label>
-                        <select name="p_gender" class="form-select form-control-custom">
-                            <option value="ชาย">ผู้ชาย</option>
-                            <option value="หญิง">ผู้หญิง</option>
-                            <option value="Unisex">ทั่วไป (Unisex)</option>
-                        </select>
+                        <label class="form-label-custom">สินค้าสำหรับ (พิมพ์เพิ่มเองได้)</label>
+                        <input type="text" name="p_gender" class="form-control form-control-custom" placeholder="เช่น ชาย, หญิง, เด็ก" required>
                     </div>
                 </div>
                 <div class="mb-3">
@@ -155,7 +151,7 @@ $result = mysqli_query($conn, $sql);
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// แก้ไขฟังก์ชัน editProduct ให้เป็นช่องกรอก Tag อิสระ
+// ฟังก์ชันแก้ไขข้อมูลสินค้า (เปลี่ยนเป็นช่องพิมพ์อิสระทั้งคู่)
 function editProduct(id, name, brand, price, category, gender) {
     Swal.fire({
         title: 'แก้ไขข้อมูลสินค้า',
@@ -166,16 +162,12 @@ function editProduct(id, name, brand, price, category, gender) {
                 
                 <div class="row">
                     <div class="col-6">
-                        <label class="form-label-custom">หมวดหมู่ (พิมพ์เพิ่ม Tag เองได้)</label>
+                        <label class="form-label-custom">หมวดหมู่</label>
                         <input id="swal-category" class="form-control form-control-custom mb-3" value="${category}" placeholder="เช่น กระเป๋า, แร็คเกต">
                     </div>
                     <div class="col-6">
                         <label class="form-label-custom">สินค้าสำหรับ</label>
-                        <select id="swal-gender" class="form-select form-control-custom mb-3">
-                            <option value="ชาย" ${gender === "ชาย" ? "selected" : ""}>ผู้ชาย</option>
-                            <option value="หญิง" ${gender === "หญิง" ? "selected" : ""}>ผู้หญิง</option>
-                            <option value="Unisex" ${gender === "Unisex" ? "selected" : ""}>Unisex</option>
-                        </select>
+                        <input id="swal-gender" class="form-control form-control-custom mb-3" value="${gender}" placeholder="เช่น ชาย, หญิง, ทั่วไป">
                     </div>
                 </div>
 
@@ -198,7 +190,7 @@ function editProduct(id, name, brand, price, category, gender) {
                 id,
                 name: document.getElementById('swal-name').value,
                 category: document.getElementById('swal-category').value,
-                gender: document.getElementById('swal-gender').value,
+                gender: document.getElementById('swal-gender').value, // รับค่าจากการพิมพ์
                 brand: document.getElementById('swal-brand').value,
                 price: document.getElementById('swal-price').value
             }
