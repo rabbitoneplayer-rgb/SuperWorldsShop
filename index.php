@@ -69,7 +69,6 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
         .search-input-group { background: white; border-radius: 50px; padding: 8px 8px 8px 25px; display: flex; align-items: center; border: 2px solid #eee; }
         .search-input-group input { border: none; outline: none; flex: 1; font-size: 1rem; }
         .btn-search { background: var(--ss-dark); color: white; border-radius: 50px; width: 45px; height: 45px; border: none; }
-        
         #search_results { 
             width: 100%; display: none; background: white; z-index: 9990; box-shadow: 0 25px 60px rgba(0,0,0,0.2); 
             position: absolute; margin-top: 15px; border-radius: 20px; overflow: hidden;
@@ -81,7 +80,6 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
         .product-img-wrapper { padding: 30px; height: 260px; display: flex; align-items: center; justify-content: center; position: relative; }
         .product-img { max-height: 100%; max-width: 100%; object-fit: contain; }
         
-        /* สไตล์ของ Tag ชาย/หญิง */
         .category-tag {
             position: absolute; top: 15px; left: 15px; padding: 4px 12px; border-radius: 50px;
             font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; z-index: 5;
@@ -179,8 +177,15 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
                 <h2 class="fw-bold m-0"><?php echo ($cat != '') ? $cat : 'สินค้าทั้งหมด'; ?></h2>
                 <span class="text-muted small">พบ <?php 
                     $count_q = "SELECT COUNT(*) as total FROM products WHERE 1";
-                    if($cat) $count_q .= " AND p_category LIKE '%$cat%'";
-                    if($search) $count_q .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%')";
+                    // นับจำนวนตามเงื่อนไขเดียวกับ SQL แสดงผล
+                    if ($search) { $count_q .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%')"; }
+                    if ($cat) {
+                        if ($cat == 'รองเท้าชาย') { $count_q .= " AND p_category LIKE '%รองเท้า%' AND (p_category LIKE '%ชาย%' OR p_name LIKE '%Men%' OR p_name LIKE '%ชาย%')"; }
+                        elseif ($cat == 'รองเท้าหญิง') { $count_q .= " AND p_category LIKE '%รองเท้า%' AND (p_category LIKE '%หญิง%' OR p_name LIKE '%Women%' OR p_name LIKE '%หญิง%')"; }
+                        elseif ($cat == 'เสื้อผ้าชาย') { $count_q .= " AND p_category LIKE '%เสื้อ%' AND (p_category LIKE '%ชาย%' OR p_name LIKE '%Men%' OR p_name LIKE '%ชาย%')"; }
+                        elseif ($cat == 'เสื้อผ้าหญิง') { $count_q .= " AND p_category LIKE '%เสื้อ%' AND (p_category LIKE '%หญิง%' OR p_name LIKE '%Women%' OR p_name LIKE '%หญิง%')"; }
+                        else { $count_q .= " AND p_category LIKE '%$cat%'"; }
+                    }
                     $count_res = mysqli_query($conn, $count_q);
                     echo mysqli_fetch_array($count_res)['total'];
                 ?> รายการ</span>
@@ -188,24 +193,40 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
 
             <div class="row g-4">
                 <?php
+                // --- โค้ดส่วนดึงข้อมูลสินค้า (ฉบับแก้ไขให้รองรับหมวดหมู่ย่อยอัตโนมัติ) ---
                 $sql = "SELECT * FROM products WHERE 1";
-                if ($search) { $sql .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%')"; }
-                if ($cat) { $sql .= " AND p_category LIKE '%$cat%'"; }
+
+                if ($search) { 
+                    $sql .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%')"; 
+                }
+
+                if ($cat) { 
+                    if ($cat == 'รองเท้าชาย') {
+                        $sql .= " AND p_category LIKE '%รองเท้า%' AND (p_category LIKE '%ชาย%' OR p_name LIKE '%Men%' OR p_name LIKE '%ชาย%')";
+                    } elseif ($cat == 'รองเท้าหญิง') {
+                        $sql .= " AND p_category LIKE '%รองเท้า%' AND (p_category LIKE '%หญิง%' OR p_name LIKE '%Women%' OR p_name LIKE '%หญิง%')";
+                    } elseif ($cat == 'เสื้อผ้าชาย') {
+                        $sql .= " AND p_category LIKE '%เสื้อ%' AND (p_category LIKE '%ชาย%' OR p_name LIKE '%Men%' OR p_name LIKE '%ชาย%')";
+                    } elseif ($cat == 'เสื้อผ้าหญิง') {
+                        $sql .= " AND p_category LIKE '%เสื้อ%' AND (p_category LIKE '%หญิง%' OR p_name LIKE '%Women%' OR p_name LIKE '%หญิง%')";
+                    } else {
+                        $sql .= " AND p_category LIKE '%$cat%'"; 
+                    }
+                }
+
                 $sql .= " ORDER BY p_id DESC";
                 $result = mysqli_query($conn, $sql);
                 
                 if(mysqli_num_rows($result) > 0) {
                     while($row = mysqli_fetch_array($result)) {
-                        // Logic ตั้งสี Tag ตามชื่อประเภท
                         $p_cat = $row['p_category'];
                         $tag_class = "tag-default";
-                        if (strpos($p_cat, 'ชาย') !== false) $tag_class = "tag-men";
-                        if (strpos($p_cat, 'หญิง') !== false) $tag_class = "tag-women";
+                        if (strpos($p_cat, 'ชาย') !== false || strpos($row['p_name'], 'Men') !== false || strpos($row['p_name'], 'ชาย') !== false) $tag_class = "tag-men";
+                        if (strpos($p_cat, 'หญิง') !== false || strpos($row['p_name'], 'Women') !== false || strpos($row['p_name'], 'หญิง') !== false) $tag_class = "tag-women";
                 ?>
                     <div class="col-6 col-md-4">
                         <div class="card product-card">
                             <span class="category-tag <?php echo $tag_class; ?>"><?php echo $p_cat; ?></span>
-                            
                             <div class="product-img-wrapper">
                                 <a href="product_detail.php?id=<?php echo $row['p_id']; ?>">
                                     <img src="<?php echo $row['p_image']; ?>" class="product-img" onerror="this.src='https://placehold.co/400x400'">
@@ -240,7 +261,6 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
 $(document).ready(function(){
     const isLoggedIn = <?php echo $is_logged_in ? 'true' : 'false'; ?>;
 
-    // Live Search Logic (คืนค่าเดิม)
     function performSearch(query) {
         if(query.length < 1) { $('#search_results').fadeOut(); return; }
         $.ajax({
@@ -255,7 +275,6 @@ $(document).ready(function(){
     $('#search_input').on('keyup focus', function(){ performSearch($(this).val()); });
     $(document).click(function(e) { if (!$(e.target).closest('#searchForm').length) $('#search_results').fadeOut(); });
 
-    // AJAX Add to Cart (คืนค่าเดิม)
     $('.add-to-cart-btn').click(function(e) {
         if (!isLoggedIn) {
             Swal.fire({ title: 'กรุณาเข้าสู่ระบบ', icon: 'warning', confirmButtonColor: '#111' }).then(r => { if(r.isConfirmed) window.location.href='login.php'; });
