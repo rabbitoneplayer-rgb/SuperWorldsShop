@@ -40,29 +40,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
     }
     $o_product = mysqli_real_escape_string($conn, implode(", ", $product_list));
 
-    // --- ส่วนแก้ไข: ปรับ UI ไม่ให้ซ้อนกัน ---
+    // --- ส่วนแสดงผลหน้าจอขณะประมวลผล (UI ใหม่) ---
     echo "<!DOCTYPE html>
     <html lang='th'>
     <head>
         <meta charset='UTF-8'>
         <meta name='viewport' content='width=device-width, initial-scale=1'>
-        <title>กำลังบันทึกข้อมูล | SUPERWORLDS</title>
+        <title>บันทึกออเดอร์ | SUPERWORLDS</title>
         <script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
         <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css'>
         <link href='https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap' rel='stylesheet'>
         <style>
             body { font-family: 'Kanit', sans-serif; background-color: #f4f7f6; height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
-            #processing-box { text-align: center; background: white; padding: 50px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); }
-            .loader { color: #e12128; font-size: 3.5rem; margin-bottom: 20px; animation: spin 1.5s linear infinite; }
+            #processing-box { text-align: center; background: white; padding: 60px; border-radius: 40px; box-shadow: 0 25px 60px rgba(0,0,0,0.06); max-width: 450px; width: 90%; }
+            .loader { color: #e12128; font-size: 4rem; margin-bottom: 30px; animation: spin 1.5s linear infinite; }
             @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            .swal2-popup { border-radius: 25px !important; }
+            h4 { font-weight: 700; color: #111; margin-bottom: 10px; letter-spacing: 0.5px; }
+            p { color: #888; font-size: 0.95rem; }
+            .swal2-popup { border-radius: 35px !important; padding: 2em !important; }
+            .swal2-title { font-weight: 700 !important; color: #111 !important; }
+            .swal2-confirm { border-radius: 50px !important; padding: 12px 30px !important; font-weight: 600 !important; }
+            .swal2-cancel { border-radius: 50px !important; padding: 12px 30px !important; font-weight: 600 !important; }
         </style>
     </head>
     <body>
         <div id='processing-box'>
             <i class='fas fa-circle-notch loader'></i>
-            <h4 style='margin:0;'>กำลังสร้างออเดอร์</h4>
-            <p style='color:#888; font-size:0.9rem;'>กรุณารอสักครู่ ระบบกำลังบันทึกข้อมูลของคุณ...</p>
+            <h4>กำลังบันทึกคำสั่งซื้อ</h4>
+            <p>กรุณารอสักครู่ ระบบกำลังจัดเตรียมข้อมูลให้คุณ...</p>
         </div>";
 
     // 3. บันทึกข้อมูล
@@ -73,27 +78,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
         unset($_SESSION['cart']);
 
         echo "<script>
-            // เมื่อทำงานเสร็จ ให้สั่งซ่อนตัวโหลดก่อนแสดง SweetAlert
             setTimeout(function() {
                 document.getElementById('processing-box').style.display = 'none';
                 Swal.fire({
-                    title: 'สั่งซื้อเรียบร้อย!',
-                    text: 'ขอบคุณที่ใช้บริการ SUPERWORLDS ออเดอร์ของคุณกำลังเตรียมจัดส่ง',
+                    title: 'สั่งซื้อสำเร็จเรียบร้อย!',
+                    text: 'ขอบคุณที่เลือกช้อปกับ SUPERWORLDS ออเดอร์ของคุณได้รับเรียบร้อยแล้ว',
                     icon: 'success',
-                    confirmButtonColor: '#111',
-                    confirmButtonText: 'ไปหน้าประวัติการสั่งซื้อ',
-                    allowOutsideClick: false
-                }).then(() => {
-                    window.location.href = 'order_history.php';
+                    iconColor: '#e12128',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e12128',
+                    cancelButtonColor: '#111',
+                    confirmButtonText: '<i class=\"fas fa-shopping-bag me-2\"></i> ช้อปปิ้งต่อ',
+                    cancelButtonText: '<i class=\"fas fa-history me-2\"></i> ดูประวัติสั่งซื้อ',
+                    allowOutsideClick: false,
+                    backdrop: `rgba(225,33,40,0.05)`
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'index.php';
+                    } else {
+                        window.location.href = 'order_history.php';
+                    }
                 });
-            }, 1500);
+            }, 1800);
         </script>";
     } else {
         $error_msg = mysqli_error($conn);
         echo "<script>
             document.getElementById('processing-box').style.display = 'none';
-            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: '$error_msg', confirmButtonColor: '#e12128' })
-            .then(() => { window.history.back(); });
+            Swal.fire({ 
+                icon: 'error', 
+                title: 'เกิดข้อผิดพลาด', 
+                text: '$error_msg', 
+                confirmButtonColor: '#111' 
+            }).then(() => { window.history.back(); });
         </script>";
     }
     echo "</body></html>";
