@@ -74,7 +74,7 @@ $result = mysqli_query($conn, $sql);
                 </thead>
                 <tbody>
                     <?php while($row = mysqli_fetch_array($result)): 
-                        $gender = $row['p_gender'] ?? 'Unisex'; // ดึงจากคอลัมน์ใหม่
+                        $gender = $row['p_gender'] ?? 'Unisex'; 
                         $tag_class = ($gender == 'ชาย') ? 'tag-men' : (($gender == 'หญิง') ? 'tag-women' : 'tag-unisex');
                     ?>
                     <tr>
@@ -86,8 +86,12 @@ $result = mysqli_query($conn, $sql);
                         <td class="text-center"><span class="badge bg-light text-dark"><?php echo $row['p_category']; ?></span></td>
                         <td class="text-center"><span class="badge badge-cat <?php echo $tag_class; ?>"><?php echo $gender; ?></span></td>
                         <td class="text-end pe-4">
-                            <button class="btn-action btn-edit me-1" onclick="editProduct(<?php echo $row['p_id']; ?>, '<?php echo addslashes($row['p_name']); ?>', '<?php echo $row['p_brand']; ?>', <?php echo $row['p_price']; ?>, '<?php echo $row['p_category']; ?>', '<?php echo $gender; ?>')"><i class="fas fa-edit"></i></button>
-                            <button class="btn-action btn-del" onclick="deleteProduct(<?php echo $row['p_id']; ?>)"><i class="fas fa-trash"></i></button>
+                            <button class="btn-action btn-edit me-1" onclick="editProduct(<?php echo $row['p_id']; ?>, '<?php echo addslashes($row['p_name']); ?>', '<?php echo $row['p_brand']; ?>', <?php echo $row['p_price']; ?>, '<?php echo $row['p_category']; ?>', '<?php echo $gender; ?>')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-action btn-del" onclick="deleteProduct(<?php echo $row['p_id']; ?>)">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </td>
                     </tr>
                     <?php endwhile; ?>
@@ -204,7 +208,22 @@ function editProduct(id, name, brand, price, category, gender) {
     }).then((result) => {
         if (result.isConfirmed) {
             const d = result.value;
+            // ส่วนที่แก้ไข: เพิ่ม &gender เข้าไปใน URL เพื่อส่งไปบันทึก
             window.location.href = `admin_action.php?act=edit_full&id=${d.id}&name=${encodeURIComponent(d.name)}&brand=${encodeURIComponent(d.brand)}&price=${d.price}&category=${encodeURIComponent(d.category)}&gender=${encodeURIComponent(d.gender)}`;
+        }
+    });
+}
+
+function deleteProduct(id) {
+    Swal.fire({
+        title: 'ยืนยันการลบ?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'ลบทิ้ง'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `admin_action.php?act=delete&id=${id}`;
         }
     });
 }
