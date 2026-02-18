@@ -2,11 +2,16 @@
 session_start();
 include_once("connectdb.php");
 
-// แนะนำให้ดึงเฉพาะของ User ที่ Login อยู่
-$u_id = $_SESSION['user_id'] ?? 0;
+// 1. ตรวจสอบการล็อกอิน: หากไม่ได้ล็อกอินให้ส่งกลับไปหน้า Login
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
 
-// ดึงข้อมูลออเดอร์ (ดึงทั้งหมดตามโครงสร้างที่คุณใช้อยู่)
-$sql = "SELECT * FROM orders ORDER BY o_id DESC"; 
+$u_id = $_SESSION['user_id'];
+
+// 2. แก้ไข SQL: ดึงเฉพาะออเดอร์ที่มี u_id ตรงกับคนที่ล็อกอินอยู่เท่านั้น
+$sql = "SELECT * FROM orders WHERE u_id = '$u_id' ORDER BY o_id DESC"; 
 $result = mysqli_query($conn, $sql);
 ?>
 <!doctype html>
@@ -17,20 +22,22 @@ $result = mysqli_query($conn, $sql);
     <title>ประวัติการสั่งซื้อ | SUPERWORLDS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root { --ss-red: #e12128; --ss-dark: #111111; --ss-gray: #f4f7f6; }
-        body { background-color: var(--ss-gray); font-family: 'Segoe UI', sans-serif; color: #333; }
+        body { background-color: var(--ss-gray); font-family: 'Segoe UI', Tahoma, sans-serif; color: #333; }
         
-        /* Header */
+        /* Header Section */
         .history-header { background: linear-gradient(135deg, var(--ss-dark) 0%, #333 100%); color: white; padding: 60px 0; border-radius: 0 0 50px 50px; margin-bottom: -40px; }
         
-        /* Order Cards */
+        /* Order Card Style */
         .order-card { border: none; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); background: #fff; transition: 0.3s; margin-bottom: 25px; overflow: hidden; }
         .order-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.12); }
         
         .product-thumbnail-wrapper { width: 100px; height: 100px; background: #f8f9fa; border-radius: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #eee; }
         .product-thumbnail { max-width: 80%; max-height: 80%; object-fit: contain; }
         
+        /* Status Pills */
         .status-pill { border-radius: 50px; padding: 6px 16px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; }
         .st-pending { background: #fff8e1; color: #f57c00; }
         .st-paid { background: #e3f2fd; color: #1976d2; }
@@ -42,9 +49,8 @@ $result = mysqli_query($conn, $sql);
         .btn-detail { border-radius: 50px; padding: 8px 20px; font-weight: 600; border: 2px solid #eee; transition: 0.3s; background: white; }
         .btn-detail:hover { background: var(--ss-dark); color: white; border-color: var(--ss-dark); }
 
-        /* Modal Detail */
+        /* Modal Design */
         .modal-content { border-radius: 30px; border: none; }
-        .modal-header { border-bottom: 1px solid #f1f1f1; padding: 25px 30px; }
         .detail-box { background: #f8f9fa; border-radius: 20px; padding: 20px; margin-bottom: 15px; }
         .detail-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #aaa; letter-spacing: 1px; margin-bottom: 5px; }
     </style>
@@ -53,8 +59,8 @@ $result = mysqli_query($conn, $sql);
 
 <div class="history-header text-center">
     <div class="container">
-        <h6 class="text-danger fw-bold text-uppercase mb-2" style="letter-spacing: 3px;">Order Journey</h6>
-        <h1 class="fw-bold mb-0">รายการสั่งซื้อของฉัน</h1>
+        <h6 class="text-danger fw-bold text-uppercase mb-2" style="letter-spacing: 3px;">User Dashboard</h6>
+        <h1 class="fw-bold mb-0">ประวัติการสั่งซื้อของฉัน</h1>
         <div class="mt-3">
             <a href="index.php" class="text-white-50 text-decoration-none small"><i class="fas fa-home me-1"></i> กลับหน้าหลัก</a>
         </div>
@@ -64,7 +70,7 @@ $result = mysqli_query($conn, $sql);
 <div class="container" style="margin-top: 20px; max-width: 900px;">
     <?php if (mysqli_num_rows($result) > 0): ?>
         <?php while($row = mysqli_fetch_array($result)): 
-            // ระบบดึงรูปภาพ
+            // ระบบดึงรูปภาพสินค้าแรกมาโชว์
             $items = explode(',', $row['o_product']);
             $first_item_name = preg_replace('/\s\(x\d+\)$/', '', trim($items[0]));
             $res_img = mysqli_query($conn, "SELECT p_image FROM products WHERE p_name = '".mysqli_real_escape_string($conn, $first_item_name)."' LIMIT 1");
@@ -78,7 +84,7 @@ $result = mysqli_query($conn, $sql);
             if($status == 'ยกเลิกแล้ว') $st_class = "st-cancel";
         ?>
         
-        <div class="card order-card">
+        <div class="card order-card shadow-sm">
             <div class="card-body p-4">
                 <div class="row align-items-center">
                     <div class="col-auto">
@@ -90,7 +96,7 @@ $result = mysqli_query($conn, $sql);
                     <div class="col ms-md-3">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
-                                <span class="order-id">ORDER #<?php echo str_pad($row['o_id'], 5, "0", STR_PAD_LEFT); ?></span>
+                                <span class="order-id">#<?php echo str_pad($row['o_id'], 5, "0", STR_PAD_LEFT); ?></span>
                                 <div class="text-muted small mt-1"><i class="far fa-calendar-alt me-1"></i> <?php echo date('d M Y | H:i', strtotime($row['o_date'])); ?></div>
                             </div>
                             <span class="status-pill <?php echo $st_class; ?>"><?php echo $status; ?></span>
@@ -99,15 +105,15 @@ $result = mysqli_query($conn, $sql);
                         <div class="fw-bold text-dark text-truncate mb-1" style="max-width: 400px;">
                             <?php echo $row['o_product']; ?>
                         </div>
-                        <div class="small text-muted">ผู้รับ: <?php echo $row['o_name']; ?></div>
+                        <div class="small text-muted">ผู้รับ: <?php echo htmlspecialchars($row['o_name']); ?></div>
                     </div>
                     
                     <div class="col-md-3 text-md-end mt-3 mt-md-0 border-start ps-4">
-                        <div class="text-muted small mb-1">ยอดสุทธิ</div>
+                        <div class="text-muted small mb-1">ยอดรวม</div>
                         <div class="price-total mb-2">฿<?php echo number_format($row['o_total']); ?></div>
                         <button class="btn btn-detail w-100 btn-sm shadow-sm" 
-                                onclick="showOrderDetail('<?php echo str_pad($row['o_id'], 5, '0', STR_PAD_LEFT); ?>', '<?php echo $status; ?>', '<?php echo $row['o_name']; ?>', '<?php echo $row['o_phone']; ?>', '<?php echo addslashes($row['o_address']); ?>', '<?php echo addslashes($row['o_product']); ?>', '<?php echo number_format($row['o_total']); ?>', '<?php echo $st_class; ?>')">
-                            ดูรายละเอียด
+                                onclick="showOrderDetail('<?php echo str_pad($row['o_id'], 5, '0', STR_PAD_LEFT); ?>', '<?php echo $status; ?>', '<?php echo htmlspecialchars($row['o_name']); ?>', '<?php echo $row['o_phone']; ?>', '<?php echo addslashes($row['o_address']); ?>', '<?php echo addslashes($row['o_product']); ?>', '<?php echo number_format($row['o_total']); ?>', '<?php echo $st_class; ?>')">
+                            รายละเอียด
                         </button>
                     </div>
                 </div>
@@ -116,9 +122,11 @@ $result = mysqli_query($conn, $sql);
         <?php endwhile; ?>
     <?php else: ?>
         <div class="text-center py-5">
-            <i class="fas fa-shopping-basket fa-5x mb-4 opacity-10"></i>
-            <h4 class="fw-bold text-muted">ยังไม่มีประวัติการสั่งซื้อ</h4>
-            <a href="index.php" class="btn btn-danger rounded-pill px-5 mt-3 shadow">เริ่มช้อปปิ้งตอนนี้</a>
+            <div class="py-5 bg-white rounded-5 shadow-sm">
+                <i class="fas fa-receipt fa-5x mb-4 opacity-10"></i>
+                <h4 class="fw-bold text-muted">คุณยังไม่มีรายการสั่งซื้อ</h4>
+                <a href="index.php" class="btn btn-danger rounded-pill px-5 mt-3 shadow">ไปเลือกซื้อสินค้ากันเลย</a>
+            </div>
         </div>
     <?php endif; ?>
 </div>
@@ -126,8 +134,8 @@ $result = mysqli_query($conn, $sql);
 <div class="modal fade" id="orderModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content shadow-lg">
-            <div class="modal-header border-0">
-                <h5 class="fw-bold mb-0">รายละเอียดคำสั่งซื้อ</h5>
+            <div class="modal-header border-0 p-4">
+                <h5 class="fw-bold mb-0">ข้อมูลการสั่งซื้อ</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 pt-0">
@@ -145,13 +153,13 @@ $result = mysqli_query($conn, $sql);
                     <div class="col-6">
                         <div class="detail-box">
                             <div class="detail-label">ชื่อผู้รับ</div>
-                            <div class="fw-bold" id="md-name"></div>
+                            <div id="md-name"></div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="detail-box">
-                            <div class="detail-label">เบอร์โทรศัพท์</div>
-                            <div class="fw-bold" id="md-phone"></div>
+                            <div class="detail-label">เบอร์โทร</div>
+                            <div id="md-phone"></div>
                         </div>
                     </div>
                 </div>
@@ -162,12 +170,12 @@ $result = mysqli_query($conn, $sql);
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mt-4 p-3 border-top">
-                    <span class="fw-bold fs-5">ยอดชำระสุทธิ</span>
+                    <span class="fw-bold fs-5">ยอดสุทธิ</span>
                     <span class="price-total text-danger" id="md-total"></span>
                 </div>
             </div>
             <div class="modal-footer border-0 p-4 pt-0">
-                <button type="button" class="btn btn-dark w-100 rounded-pill py-2 fw-bold" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
+                <button type="button" class="btn btn-dark w-100 rounded-pill py-2 fw-bold" data-bs-dismiss="modal">ตกลง</button>
             </div>
         </div>
     </div>
