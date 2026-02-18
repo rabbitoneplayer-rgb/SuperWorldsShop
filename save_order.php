@@ -5,7 +5,7 @@ include_once("connectdb.php");
 // ตรวจสอบว่ามีการส่งข้อมูลมาและล็อกอินอยู่หรือไม่
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
     
-    // 1. รับค่ารหัสผู้ใช้จาก Session (สำคัญมากเพื่อให้ดึงประวัติได้)
+    // 1. รับค่ารหัสผู้ใช้จาก Session
     $u_id = $_SESSION['user_id']; 
     
     // 2. รับค่าจากฟอร์มและป้องกัน SQL Injection
@@ -14,7 +14,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
     $address = mysqli_real_escape_string($conn, $_POST['address']);
     $total_amount = mysqli_real_escape_string($conn, $_POST['total_amount']);
     
-    // 3. ดึงสินค้าในตะกร้ามาทำเป็นข้อความ
+    // 3. จัดการไฟล์สลิปโอนเงิน (ถ้ามีการอัปโหลด)
+    $slip_name = ""; // ตั้งตัวแปรว่างไว้ก่อน
+    if (!empty($_FILES['payment_slip']['name'])) {
+        $target_dir = "img/slips/";
+        
+        // สร้างโฟลเดอร์ถ้ายังไม่มี
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0777, true);
+        }
+        
+        $ext = pathinfo($_FILES['payment_slip']['name'], PATHINFO_EXTENSION);
+        $slip_name = "slip_" . $u_id . "_" . time() . "." . $ext;
+        $target_file = $target_dir . $slip_name;
+
+        if (!move_uploaded_file($_FILES['payment_slip']['tmp_name'], $target_file)) {
+            echo "<script>alert('ไม่สามารถอัปโหลดไฟล์สลิปได้'); window.history.back();</script>";
+            exit();
+        }
+    }
+
+    // 4. ดึงสินค้าในตะกร้ามาทำเป็นข้อความ
     $product_list = [];
     if (isset($_SESSION['cart'])) {
         foreach ($_SESSION['cart'] as $id => $qty) {
@@ -36,18 +56,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
     </head>
     <body>";
 
-    // 4. บันทึกข้อมูลลงตาราง orders (เพิ่มคอลัมน์ u_id เข้าไป)
-    $sql_order = "INSERT INTO orders (u_id, o_name, o_phone, o_address, o_total, o_status, o_date, o_product) 
-                  VALUES ('$u_id', '$fullname', '$phone', '$address', '$total_amount', 'รอดำเนินการ', NOW(), '$o_product')";
+    // 5. บันทึกข้อมูลลงตาราง orders (เพิ่มคอลัมน์ u_id และ o_slip)
+    $sql_order = "INSERT INTO orders (u_id, o_name, o_phone, o_address, o_total, o_status, o_date, o_product, o_slip) 
+                  VALUES ('$u_id', '$fullname', '$phone', '$address', '$total_amount', 'รอดำเนินการ', NOW(), '$o_product', '$slip_name')";
     
     if (mysqli_query($conn, $sql_order)) {
-        // 5. ล้างตะกร้าสินค้าหลังจากบันทึกสำเร็จ
+        // 6. ล้างตะกร้าสินค้าหลังจากบันทึกสำเร็จ
         unset($_SESSION['cart']);
 
         echo "<script>
             Swal.fire({
                 title: 'สั่งซื้อสำเร็จ!',
-                text: 'เราได้รับคำสั่งซื้อของคุณเรียบร้อยแล้ว',
+                text: 'เราได้รับคำสั่งซื้อและหลักฐานการโอนเงินเรียบร้อยแล้ว',
                 icon: 'success',
                 confirmButtonColor: '#e12128',
                 confirmButtonText: 'ตกลง'
@@ -69,7 +89,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
     }
     echo "</body></html>";
 } else {
-    // ถ้าไม่ได้ล็อกอิน หรือไม่ได้ส่ง POST มา ให้เด้งกลับ
     header("Location: login.php");
     exit();
 }
