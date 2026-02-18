@@ -15,7 +15,7 @@ if (isset($_SESSION['cart'])) {
 $is_logged_in = isset($_SESSION['user_id']);
 $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1);
 
-// --- 1. ส่วน Logic การดึงข้อมูลสินค้า (ฉบับปรับปรุงใหม่ให้ฉลาดขึ้น) ---
+// --- 1. ส่วน Logic การดึงข้อมูลสินค้า (ปรับปรุงใหม่เพื่อให้กดหมวดหมู่แล้วขึ้นแน่นอน) ---
 $where_clause = " WHERE 1 ";
 
 if ($search) {
@@ -23,27 +23,20 @@ if ($search) {
 }
 
 if ($cat) {
-    // จัดการหมวดหมู่ รองเท้า
+    // ตรวจสอบหมวดหมู่แบบชาญฉลาด (รองรับทั้งคำว่า ชาย/ผู้ชาย และการพิมพ์ Tag เอง)
     if (strpos($cat, 'รองเท้า') !== false) {
         $where_clause .= " AND p_category LIKE '%รองเท้า%' ";
-        if (strpos($cat, 'ชาย') !== false) {
-            $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') ";
-        } elseif (strpos($cat, 'หญิง') !== false) {
-            $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') ";
-        }
+        if (strpos($cat, 'ชาย') !== false) { $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') "; }
+        elseif (strpos($cat, 'หญิง') !== false) { $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') "; }
     } 
-    // จัดการหมวดหมู่ เสื้อผ้า
     elseif (strpos($cat, 'เสื้อผ้า') !== false) {
         $where_clause .= " AND p_category LIKE '%เสื้อผ้า%' ";
-        if (strpos($cat, 'ชาย') !== false) {
-            $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') ";
-        } elseif (strpos($cat, 'หญิง') !== false) {
-            $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') ";
-        }
+        if (strpos($cat, 'ชาย') !== false) { $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') "; }
+        elseif (strpos($cat, 'หญิง') !== false) { $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') "; }
     } 
-    // จัดการ Tag อื่นๆ ที่พิมพ์เพิ่มเองอิสระ หรือเลือกจาก Gear
     else {
-        $where_clause .= " AND (p_category LIKE '%$cat%' OR p_gender LIKE '%$cat%') ";
+        // สำหรับ Tag ทั่วไปที่พิมพ์เพิ่มเองอิสระ หรือหมวดหมู่อื่นๆ
+        $where_clause .= " AND (p_category LIKE '%$cat%' OR p_gender LIKE '%$cat%' OR p_name LIKE '%$cat%') ";
     }
 }
 
@@ -102,7 +95,6 @@ $result = mysqli_query($conn, $sql);
         .product-img-wrapper { padding: 30px; height: 260px; display: flex; align-items: center; justify-content: center; position: relative; }
         .product-img { max-height: 100%; max-width: 100%; object-fit: contain; }
         
-        /* ปรับปรุง Tag สีขาวไม่ให้ล้น */
         .category-tag { position: absolute; top: 15px; left: 15px; padding: 4px 12px; border-radius: 50px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; z-index: 5; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .tag-men { background: #111; color: #fff; }
         .tag-women { background: #ff4d94; color: #fff; }
@@ -199,7 +191,7 @@ $result = mysqli_query($conn, $sql);
         </div>
 
         <div class="col-lg-9">
-            <div class="d-flex justify-content-between align-items-end mb-4">
+            <div class="d-flex justify-content-between align-items-end mb-4 px-3">
                 <h2 class="fw-bold m-0"><?php echo ($cat != '') ? htmlspecialchars($cat) : 'สินค้าทั้งหมด'; ?></h2>
                 <span class="text-muted small">พบ <?php echo $total_items; ?> รายการ</span>
             </div>
@@ -268,8 +260,13 @@ $(document).ready(function(){
         });
     }
 
-    // Search ทำงานทันทีที่ Focus และตอนพิมพ์
-    $('#search_input').on('focus keyup', function(){ 
+    // แก้ไข: ให้ Search ทำงานทันทีที่ Focus (คลิกในช่อง) แม้ยังไม่พิมพ์
+    $('#search_input').on('focus', function(){ 
+        const val = $(this).val();
+        if(val.length >= 1) performSearch(val); 
+    });
+
+    $('#search_input').on('keyup', function(){ 
         performSearch($(this).val()); 
     });
 
