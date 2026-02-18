@@ -15,7 +15,7 @@ if (!$row) { echo "ไม่พบสินค้า"; exit; }
 
 // เช็คสถานะการล็อกอินและสิทธิ์แอดมิน
 $is_logged_in = isset($_SESSION['user_id']);
-$is_admin = (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1);
+$is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1);
 
 // 3. เตรียมข้อมูลหมวดหมู่และตัวเลือก
 $category = trim($row['p_category']); 
@@ -57,11 +57,9 @@ if (strpos($category, 'ชาย') !== false || strpos($p_name, 'Men') !== false
         :root { --ss-red: #e12128; --ss-dark: #111111; --ss-gray: #f8f9fa; --ss-border: #eee; }
         body { font-family: 'Kanit', sans-serif; background-color: #fff; color: #333; }
         
-        /* ปุ่มย้อนกลับ */
         .back-btn { display: inline-flex; align-items: center; gap: 10px; color: #888; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: 0.3s; margin-bottom: 25px; }
         .back-btn:hover { color: var(--ss-dark); transform: translateX(-5px); }
 
-        /* Tag Styling */
         .detail-tags-wrapper { display: flex; gap: 10px; margin-bottom: 15px; }
         .gender-tag { padding: 4px 15px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
         .tag-men { background: var(--ss-dark); color: #fff; }
@@ -69,33 +67,51 @@ if (strpos($category, 'ชาย') !== false || strpos($p_name, 'Men') !== false
         .tag-default { background: #eee; color: #333; }
         .category-outline-tag { padding: 4px 15px; border-radius: 50px; font-size: 0.7rem; font-weight: 600; border: 1.5px solid var(--ss-border); color: #888; }
 
-        /* Gallery System */
         .gallery-container { position: sticky; top: 100px; }
         .img-main-display { background-color: var(--ss-gray); border-radius: 40px; padding: 50px; text-align: center; display: flex; align-items: center; justify-content: center; height: 580px; overflow: hidden; position: relative; border: 1px solid #f0f0f0; }
-        .product-main-img { max-width: 100%; max-height: 100%; object-fit: contain; transition: 0.8s cubic-bezier(0.165, 0.84, 0.44, 1); }
-        .img-main-display:hover .product-main-img { transform: scale(1.1) rotate(-2deg); }
+        .product-main-img { max-width: 100%; max-height: 100%; object-fit: contain; transition: 0.8s; }
         
         .thumb-container { display: flex; gap: 15px; margin-top: 25px; justify-content: center; flex-wrap: wrap; }
         .thumb-box { width: 85px; height: 85px; border-radius: 18px; border: 2px solid var(--ss-border); cursor: pointer; overflow: hidden; padding: 8px; transition: 0.3s; background: #fff; }
         .thumb-box img { width: 100%; height: 100%; object-fit: contain; }
         .thumb-box.active { border-color: var(--ss-red); box-shadow: 0 8px 20px rgba(225,33,40,0.15); }
         
-        /* Info Styling */
         .brand-badge { color: var(--ss-red); font-weight: 800; text-transform: uppercase; letter-spacing: 4px; font-size: 0.9rem; margin-bottom: 5px; display: block; }
         .product-title { font-size: 3rem; font-weight: 800; line-height: 1.1; letter-spacing: -1px; margin-bottom: 20px; color: var(--ss-dark); }
         .price-label { font-size: 2.4rem; font-weight: 800; color: var(--ss-dark); margin-bottom: 35px; display: block; }
         
-        .opt-btn { min-width: 75px; height: 55px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--ss-border); border-radius: 16px; cursor: pointer; font-weight: 700; transition: 0.3s; background: #fff; font-size: 1.1rem; }
-        .opt-btn.active { background: var(--ss-dark); color: white; border-color: var(--ss-dark); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        /* แก้ไขสไตล์ปุ่มตัวเลือกให้ปุ่มลบกากบาทโชว์ */
+        .opt-btn { position: relative; min-width: 75px; height: 55px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--ss-border); border-radius: 16px; cursor: pointer; font-weight: 700; transition: 0.3s; background: #fff; font-size: 1.1rem; }
+        .opt-btn.active { background: var(--ss-dark); color: white; border-color: var(--ss-dark); }
         
+        /* ปรับปรุงปุ่มกากบาทแอดมินให้เด่นขึ้น */
+        .admin-badge-del { 
+            position: absolute; 
+            top: -10px; 
+            right: -10px; 
+            background: var(--ss-red) !important; 
+            color: white !important; 
+            border-radius: 50%; 
+            width: 26px; 
+            height: 26px; 
+            font-size: 12px; 
+            display: flex !important; 
+            align-items: center; 
+            justify-content: center; 
+            border: 2px solid white; 
+            z-index: 99; 
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .admin-badge-del:hover { transform: scale(1.2); background: black !important; }
+
         .qty-wrapper { display: flex; align-items: center; background: var(--ss-gray); border-radius: 20px; padding: 8px; width: fit-content; border: 1px solid #eee; }
-        .qty-btn { width: 45px; height: 45px; border-radius: 15px; border: none; background: white; font-weight: 800; transition: 0.3s; }
+        .qty-btn { width: 45px; height: 45px; border-radius: 15px; border: none; background: white; font-weight: 800; }
         
         .btn-buy-now { background: var(--ss-dark); color: #fff; border: none; border-radius: 25px; padding: 20px; font-weight: 800; width: 100%; font-size: 1.2rem; text-transform: uppercase; transition: 0.4s; display: flex; align-items: center; justify-content: center; gap: 15px; }
-        .btn-buy-now:hover { background: var(--ss-red); transform: translateY(-5px); box-shadow: 0 20px 40px rgba(225, 33, 40, 0.25); }
+        .btn-buy-now:hover { background: var(--ss-red); transform: translateY(-5px); }
 
         .admin-bar { background: #000; color: #fff; padding: 15px 0; border-bottom: 4px solid var(--ss-red); position: sticky; top: 0; z-index: 1000; }
-        .admin-badge-del { position: absolute; top: -10px; right: -10px; background: var(--ss-red); color: white; border-radius: 50%; width: 24px; height: 24px; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 2px solid white; }
     </style>
 </head>
 <body>
@@ -103,7 +119,7 @@ if (strpos($category, 'ชาย') !== false || strpos($p_name, 'Men') !== false
 <?php if($is_admin): ?>
 <div class="admin-bar no-print">
     <div class="container d-flex justify-content-between align-items-center">
-        <span class="fw-bold small"><i class="fas fa-user-shield me-2 text-danger"></i> ADMIN EDIT MODE: <?php echo $row['p_name']; ?></span>
+        <span class="fw-bold small"><i class="fas fa-user-shield me-2 text-danger"></i> ADMIN EDIT MODE</span>
         <div class="d-flex gap-2">
             <a href="admin_products.php" class="btn btn-sm btn-danger rounded-pill px-3">คลังสินค้า</a>
             <button class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="location.reload()"><i class="fas fa-sync"></i></button>
@@ -113,9 +129,7 @@ if (strpos($category, 'ชาย') !== false || strpos($p_name, 'Men') !== false
 <?php endif; ?>
 
 <div class="container mt-4 mb-5 pt-3">
-    <a href="index.php" class="back-btn">
-        <i class="fas fa-arrow-left"></i> ย้อนกลับหน้าหลัก
-    </a>
+    <a href="index.php" class="back-btn"><i class="fas fa-arrow-left"></i> ย้อนกลับหน้าหลัก</a>
 
     <div class="row g-lg-5">
         <div class="col-lg-6">
@@ -151,7 +165,9 @@ if (strpos($category, 'ชาย') !== false || strpos($p_name, 'Men') !== false
                             <div class="opt-btn" data-value="<?php echo trim($opt); ?>">
                                 <?php echo trim($opt); ?>
                                 <?php if($is_admin): ?>
-                                    <div class="admin-badge-del" onclick="removeOption('<?php echo trim($opt); ?>', event)"><i class="fas fa-times"></i></div>
+                                    <div class="admin-badge-del" onclick="removeOption('<?php echo trim($opt); ?>', event)">
+                                        <i class="fas fa-times"></i>
+                                    </div>
                                 <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
@@ -195,8 +211,7 @@ if (strpos($category, 'ชาย') !== false || strpos($p_name, 'Men') !== false
 <script>
 function changeGalleryImage(src, element) {
     const mainImg = document.getElementById('mainImg');
-    mainImg.style.opacity = '0';
-    setTimeout(() => { mainImg.src = src; mainImg.style.opacity = '1'; }, 200);
+    mainImg.src = src;
     document.querySelectorAll('.thumb-box').forEach(box => box.classList.remove('active'));
     element.classList.add('active');
 }
@@ -211,19 +226,19 @@ $(document).ready(function(){
 
     $('.add-to-cart-btn').click(function() {
         if (!isLoggedIn) {
-            Swal.fire({ title: 'กรุณาเข้าสู่ระบบ', icon: 'info', showCancelButton: true, confirmButtonColor: '#111', confirmButtonText: 'Login Now' }).then((result) => { if (result.isConfirmed) window.location.href = 'login.php'; });
+            Swal.fire({ title: 'กรุณาเข้าสู่ระบบ', icon: 'info', confirmButtonText: 'Login Now' }).then((result) => { if (result.isConfirmed) window.location.href = 'login.php'; });
             return;
         }
         const opt = $('#selected_option').val();
         if(!opt) {
-            Swal.fire({ icon: 'warning', title: 'โปรดเลือกตัวเลือก', text: 'กรุณาเลือกไซส์ก่อนหยิบใส่ตะกร้า', confirmButtonColor: '#111' });
+            Swal.fire({ icon: 'warning', title: 'โปรดเลือกตัวเลือก' });
             return;
         }
         $.ajax({
             url: 'cart_action.php', type: 'GET',
             data: { id: '<?php echo $p_id; ?>', action: 'add', qty: $('#p_qty').val(), option: opt, ajax: 1 },
             success: function(res) {
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เพิ่มลงตะกร้าเรียบร้อย', showConfirmButton: false, timer: 2000 });
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เพิ่มลงตะกร้าแล้ว', showConfirmButton: false, timer: 2000 });
                 if(parent.$('#cart-badge').length) parent.$('#cart-badge').text(res);
             }
         });
@@ -235,15 +250,15 @@ function changeQty(v) {
     if(q >= 1) $('#p_qty').val(q);
 }
 
-// Admin Scripts (Original preserved)
+// Admin Scripts
 function addOption() {
-    Swal.fire({ title: 'เพิ่มไซส์/ตัวเลือก', input: 'text', showCancelButton: true, confirmButtonColor: '#111' }).then(r => {
+    Swal.fire({ title: 'เพิ่มไซส์/ตัวเลือก', input: 'text', showCancelButton: true }).then(r => {
         if(r.value) updateAdminOptions('add', r.value);
     });
 }
 function removeOption(v, e) {
-    e.stopPropagation();
-    Swal.fire({ title: 'ลบตัวเลือกนี้?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e12128' }).then(r => {
+    e.stopPropagation(); // กันปุ่มหลักทำงาน
+    Swal.fire({ title: 'ลบตัวเลือกนี้?', icon: 'warning', showCancelButton: true }).then(r => {
         if(r.isConfirmed) updateAdminOptions('remove', v);
     });
 }
@@ -253,7 +268,7 @@ function updateAdminOptions(action, value) {
     });
 }
 function editDescription() {
-    Swal.fire({ title: 'แก้ไขรายละเอียดสินค้า', input: 'textarea', inputValue: $('#desc-text').text(), showCancelButton: true, confirmButtonColor: '#111' }).then(r => {
+    Swal.fire({ title: 'แก้ไขรายละเอียดสินค้า', input: 'textarea', inputValue: $('#desc-text').text(), showCancelButton: true }).then(r => {
         if(r.value) $.post('admin_action.php?act=update_detail', { p_id: '<?php echo $p_id; ?>', p_detail: r.value }, (res) => {
             if(res.includes('success')) location.reload();
         });
