@@ -23,20 +23,27 @@ if ($search) {
 }
 
 if ($cat) {
-    // ตรวจสอบหมวดหมู่แบบชาญฉลาด (รองรับทั้งคำว่า ชาย/ผู้ชาย และการพิมพ์ Tag เอง)
+    // จัดการหมวดหมู่ รองเท้า
     if (strpos($cat, 'รองเท้า') !== false) {
         $where_clause .= " AND p_category LIKE '%รองเท้า%' ";
-        if (strpos($cat, 'ชาย') !== false) { $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') "; }
-        elseif (strpos($cat, 'หญิง') !== false) { $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') "; }
+        if (strpos($cat, 'ชาย') !== false) {
+            $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') ";
+        } elseif (strpos($cat, 'หญิง') !== false) {
+            $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') ";
+        }
     } 
+    // จัดการหมวดหมู่ เสื้อผ้า
     elseif (strpos($cat, 'เสื้อผ้า') !== false) {
         $where_clause .= " AND p_category LIKE '%เสื้อผ้า%' ";
-        if (strpos($cat, 'ชาย') !== false) { $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') "; }
-        elseif (strpos($cat, 'หญิง') !== false) { $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') "; }
+        if (strpos($cat, 'ชาย') !== false) {
+            $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') ";
+        } elseif (strpos($cat, 'หญิง') !== false) {
+            $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') ";
+        }
     } 
+    // จัดการ Tag อื่นๆ ที่พิมพ์เพิ่มเองอิสระ หรือเลือกจาก Gear
     else {
-        // สำหรับ Tag ทั่วไปที่พิมพ์เพิ่มเองอิสระ หรือหมวดหมู่อื่นๆ
-        $where_clause .= " AND (p_category LIKE '%$cat%' OR p_gender LIKE '%$cat%' OR p_name LIKE '%$cat%') ";
+        $where_clause .= " AND (p_category LIKE '%$cat%' OR p_gender LIKE '%$cat%') ";
     }
 }
 
@@ -73,8 +80,8 @@ $result = mysqli_query($conn, $sql);
         .navbar { background-color: var(--ss-dark) !important; padding: 15px 0; border-bottom: 3px solid var(--ss-red); }
         .navbar-brand { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; }
 
-        /* --- Sidebar Category (จัดการเรื่องล้นหน้าจอ) --- */
-        .cat-group { display: flex; flex-direction: column; gap: 5px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); max-height: 80vh; overflow-y: auto; }
+        /* --- Sidebar Category (Fixed Scroll) --- */
+        .cat-group { display: flex; flex-direction: column; gap: 5px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); max-height: 75vh; overflow-y: auto; }
         .cat-group::-webkit-scrollbar { width: 4px; }
         .cat-group::-webkit-scrollbar-thumb { background: #eee; border-radius: 10px; }
         .cat-header { font-weight: 800; text-transform: uppercase; font-size: 0.75rem; color: #bbb; letter-spacing: 1.5px; margin-bottom: 10px; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px; }
@@ -95,7 +102,8 @@ $result = mysqli_query($conn, $sql);
         .product-img-wrapper { padding: 30px; height: 260px; display: flex; align-items: center; justify-content: center; position: relative; }
         .product-img { max-height: 100%; max-width: 100%; object-fit: contain; }
         
-        .category-tag { position: absolute; top: 15px; left: 15px; padding: 4px 12px; border-radius: 50px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; z-index: 5; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* Tag ปรับปรุงไม่ให้ทับซ้อน */
+        .category-tag { position: absolute; top: 15px; left: 15px; padding: 4px 12px; border-radius: 50px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; z-index: 5; max-width: 85%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .tag-men { background: #111; color: #fff; }
         .tag-women { background: #ff4d94; color: #fff; }
         .tag-default { background: #eee; color: #333; }
@@ -191,8 +199,8 @@ $result = mysqli_query($conn, $sql);
         </div>
 
         <div class="col-lg-9">
-            <div class="d-flex justify-content-between align-items-end mb-4 px-3">
-                <h2 class="fw-bold m-0"><?php echo ($cat != '') ? htmlspecialchars($cat) : 'สินค้าทั้งหมด'; ?></h2>
+            <div class="d-flex justify-content-between align-items-end mb-4 px-2">
+                <h2 class="fw-bold m-0"><?php echo ($cat != '') ? htmlspecialchars($cat) : 'สินค้าแนะนำ'; ?></h2>
                 <span class="text-muted small">พบ <?php echo $total_items; ?> รายการ</span>
             </div>
 
@@ -260,20 +268,23 @@ $(document).ready(function(){
         });
     }
 
-    // แก้ไข: ให้ Search ทำงานทันทีที่ Focus (คลิกในช่อง) แม้ยังไม่พิมพ์
-    $('#search_input').on('focus', function(){ 
+    // แก้ไข: ให้ Search แสดงทันทีที่ Focus (คลิก) หากมีคำค้นหาอยู่
+    $('#search_input').on('focus', function(){
         const val = $(this).val();
-        if(val.length >= 1) performSearch(val); 
+        if(val.length >= 1) performSearch(val);
     });
 
+    // ค้นหาขณะพิมพ์
     $('#search_input').on('keyup', function(){ 
         performSearch($(this).val()); 
     });
 
+    // ปิดผลการค้นหาเมื่อคลิกข้างนอก
     $(document).click(function(e) { 
         if (!$(e.target).closest('#searchForm').length) $('#search_results').fadeOut(); 
     });
 
+    // ระบบเพิ่มลงตะกร้า
     $('.add-to-cart-btn').click(function(e) {
         if (!isLoggedIn) {
             Swal.fire({ title: 'กรุณาเข้าสู่ระบบ', icon: 'warning', confirmButtonColor: '#111' }).then(r => { if(r.isConfirmed) window.location.href='login.php'; });
