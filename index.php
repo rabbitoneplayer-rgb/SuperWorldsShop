@@ -2,6 +2,7 @@
 session_start(); 
 include_once("connectdb.php"); 
 
+// รับค่าหมวดหมู่และคำค้นหา
 $cat = isset($_GET['cat']) ? mysqli_real_escape_string($conn, $_GET['cat']) : '';
 $search = isset($_GET['q']) ? mysqli_real_escape_string($conn, $_GET['q']) : '';
 
@@ -39,19 +40,12 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
         .navbar { background-color: var(--ss-dark) !important; padding: 15px 0; border-bottom: 3px solid var(--ss-red); }
         .navbar-brand { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; }
 
-        /* --- Sidebar Category (Fixed Overlapping) --- */
+        /* --- Sidebar Category --- */
         .cat-group { display: flex; flex-direction: column; gap: 5px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); max-height: calc(100vh - 150px); overflow-y: auto; }
         .cat-header { font-weight: 800; text-transform: uppercase; font-size: 0.75rem; color: #bbb; letter-spacing: 1.5px; margin-bottom: 10px; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px; }
         .filter-btn { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-radius: 12px; color: #555; text-decoration: none; font-size: 0.9rem; font-weight: 400; transition: 0.3s; }
         .filter-btn:hover { background: var(--ss-gray); color: var(--ss-red); transform: translateX(5px); }
         .filter-btn.active { background: var(--ss-dark); color: #fff; font-weight: 600; }
-
-        /* --- Search Bar --- */
-        .search-container { max-width: 800px; margin: 0 auto; position: relative; }
-        .search-input-group { background: white; border-radius: 50px; padding: 8px 8px 8px 25px; display: flex; align-items: center; border: 2px solid #eee; }
-        .search-input-group input { border: none; outline: none; flex: 1; font-size: 1rem; }
-        .btn-search { background: var(--ss-dark); color: white; border-radius: 50px; width: 45px; height: 45px; border: none; }
-        #search_results { width: 100%; display: none; background: white; z-index: 9990; box-shadow: 0 25px 60px rgba(0,0,0,0.2); position: absolute; margin-top: 15px; border-radius: 20px; overflow: hidden; }
 
         /* --- Product Card & Tags --- */
         .product-card { border: none; border-radius: 25px; transition: 0.4s; background: #fff; height: 100%; border: 1px solid #f0f0f0; position: relative; }
@@ -69,6 +63,10 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
         .btn-add-cart:hover { background: var(--ss-red); }
 
         footer { background: var(--ss-dark) !important; color: #888; padding: 60px 0; }
+
+        /* Custom Scrollbar for Sidebar */
+        .cat-group::-webkit-scrollbar { width: 5px; }
+        .cat-group::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -117,7 +115,7 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
                 <input type="text" name="q" id="search_input" placeholder="ค้นหาแบรนด์หรือสินค้า..." value="<?php echo htmlspecialchars($search); ?>" autocomplete="off">
                 <button type="submit" class="btn-search"><i class="fas fa-search"></i></button>
             </div>
-            <div id="search_results"></div>
+            <div id="search_results" style="text-align: left;"></div>
         </form>
     </div>
 </div>
@@ -138,9 +136,10 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
                         <?php
                         $cat_query = mysqli_query($conn, "SELECT * FROM categories WHERE cat_group = '$key'");
                         while ($c_row = mysqli_fetch_array($cat_query)):
+                            // ส่งค่า cat ไปโดยใช้ชื่อ Tag ตรงๆ หรือแบบผสมตามที่คุณออกแบบ
                             $full_cat_name = ($key == 'GEAR') ? $c_row['cat_name'] : $label . $c_row['cat_name'];
                         ?>
-                            <a href="index.php?cat=<?= $full_cat_name ?>" class="filter-btn <?= ($cat == $full_cat_name) ? 'active' : '' ?>">
+                            <a href="index.php?cat=<?= urlencode($full_cat_name) ?>" class="filter-btn <?= ($cat == $full_cat_name) ? 'active' : '' ?>">
                                 <?= $c_row['cat_name'] ?>
                             </a>
                         <?php endwhile; ?>
@@ -155,37 +154,44 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
         </div>
 
         <div class="col-lg-9">
+            <?php
+            // --- ปรับปรุง Logic การ Query ให้รองรับการกดเลือกหมวดหมู่ย่อย ---
+            $where_clause = " WHERE 1 ";
+            
+            if ($search) {
+                $where_clause .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%' OR p_category LIKE '%$search%') ";
+            }
+            
+            if ($cat) {
+                // ตรวจสอบว่าเป็นหมวดหมู่พิเศษหรือไม่
+                if ($cat == 'รองเท้าชาย') {
+                    $where_clause .= " AND p_category LIKE '%รองเท้า%' AND p_gender = 'ชาย' ";
+                } elseif ($cat == 'รองเท้าหญิง') {
+                    $where_clause .= " AND p_category LIKE '%รองเท้า%' AND p_gender = 'หญิง' ";
+                } elseif ($cat == 'เสื้อผ้าชาย') {
+                    $where_clause .= " AND p_category LIKE '%เสื้อผ้า%' AND p_gender = 'ชาย' ";
+                } elseif ($cat == 'เสื้อผ้าหญิง') {
+                    $where_clause .= " AND p_category LIKE '%เสื้อผ้า%' AND p_gender = 'หญิง' ";
+                } else {
+                    // หากเป็น Tag ทั่วไปที่พิมพ์เพิ่มเอง ให้ค้นหาจาก p_category หรือ p_gender
+                    $where_clause .= " AND (p_category LIKE '%$cat%' OR p_gender LIKE '%$cat%') ";
+                }
+            }
+
+            // นับจำนวนรายการ
+            $count_sql = "SELECT COUNT(*) as total FROM products " . $where_clause;
+            $count_res = mysqli_query($conn, $count_sql);
+            $total_items = mysqli_fetch_array($count_res)['total'];
+            ?>
+
             <div class="d-flex justify-content-between align-items-end mb-4">
-                <h2 class="fw-bold m-0"><?php echo ($cat != '') ? str_replace(['ชาย', 'หญิง'], ['ผู้ชาย', 'ผู้หญิง'], $cat) : 'สินค้าทั้งหมด'; ?></h2>
-                <span class="text-muted small">พบ <?php 
-                    // SQL นับจำนวนที่แก้ไขใหม่ให้ตรงกับสินค้าที่แสดงจริง
-                    $sql_count = "SELECT COUNT(*) as total FROM products WHERE 1";
-                    if ($search) { $sql_count .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%' OR p_category LIKE '%$search%')"; }
-                    if ($cat) {
-                        if ($cat == 'รองเท้าชาย') { $sql_count .= " AND p_category = 'รองเท้า' AND p_gender = 'ชาย'"; }
-                        elseif ($cat == 'รองเท้าหญิง') { $sql_count .= " AND p_category = 'รองเท้า' AND p_gender = 'หญิง'"; }
-                        elseif ($cat == 'เสื้อผ้าชาย') { $sql_count .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'ชาย'"; }
-                        elseif ($cat == 'เสื้อผ้าหญิง') { $sql_count .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'หญิง'"; }
-                        else { $sql_count .= " AND (p_category LIKE '%$cat%' OR p_gender LIKE '%$cat%')"; }
-                    }
-                    $count_res = mysqli_query($conn, $sql_count);
-                    echo mysqli_fetch_array($count_res)['total'];
-                ?> รายการ</span>
+                <h2 class="fw-bold m-0"><?php echo ($cat != '') ? htmlspecialchars($cat) : 'สินค้าทั้งหมด'; ?></h2>
+                <span class="text-muted small">พบ <?php echo $total_items; ?> รายการ</span>
             </div>
 
             <div class="row g-4">
                 <?php
-                // --- ส่วนดึงข้อมูลสินค้า (Logic แก้ไขใหม่) ---
-                $sql = "SELECT * FROM products WHERE 1";
-                if ($search) { $sql .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%' OR p_category LIKE '%$search%')"; }
-                if ($cat) {
-                    if ($cat == 'รองเท้าชาย') { $sql .= " AND p_category = 'รองเท้า' AND p_gender = 'ชาย'"; }
-                    elseif ($cat == 'รองเท้าหญิง') { $sql .= " AND p_category = 'รองเท้า' AND p_gender = 'หญิง'"; }
-                    elseif ($cat == 'เสื้อผ้าชาย') { $sql .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'ชาย'"; }
-                    elseif ($cat == 'เสื้อผ้าหญิง') { $sql .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'หญิง'"; }
-                    else { $sql .= " AND (p_category LIKE '%$cat%' OR p_gender LIKE '%$cat%')"; }
-                }
-                $sql .= " ORDER BY p_id DESC";
+                $sql = "SELECT * FROM products " . $where_clause . " ORDER BY p_id DESC";
                 $result = mysqli_query($conn, $sql);
                 
                 if(mysqli_num_rows($result) > 0) {
@@ -211,7 +217,12 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
                             </div>
                         </div>
                     </div>
-                <?php } } else { echo '<div class="col-12 text-center py-5 opacity-50"><h4>ไม่พบสินค้าในหมวดหมู่นี้</h4></div>'; } ?>
+                <?php } } else { ?>
+                    <div class="col-12 text-center py-5 opacity-50">
+                        <i class="fas fa-box-open fa-3x mb-3"></i>
+                        <h4>ไม่พบสินค้าในหมวดหมู่นี้</h4>
+                    </div>
+                <?php } ?>
             </div>
         </div>
     </div>
