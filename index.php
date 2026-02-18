@@ -51,57 +51,54 @@ $result = mysqli_query($conn, $sql);
         :root { --ss-red: #e12128; --ss-dark: #111111; --ss-gray: #f8f9fa; }
         body { font-family: 'Kanit', sans-serif; background-color: var(--ss-gray); color: #333; margin: 0; padding: 0; overflow-x: hidden; }
         
-        /* --- Navigation & Dropdown Management --- */
-        .navbar { background-color: var(--ss-dark) !important; padding: 15px 0; border-bottom: 3px solid var(--ss-red); z-index: 1050; }
-        .navbar-brand { font-size: 1.8rem; font-weight: 800; }
-        
-        .dropdown-menu { 
-            min-width: 250px !important; 
-            border-radius: 20px !important; 
-            padding: 12px !important; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3) !important;
-            margin-top: 15px !important;
-            border: none !important;
-            z-index: 9999 !important; 
+        /* --- คืนค่า Floating Admin Sidebar --- */
+        .admin-sidebar { 
+            position: fixed; left: 20px; top: 50%; transform: translateY(-50%); 
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
+            padding: 15px 10px; border-radius: 20px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
         }
+        .admin-btn { width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; color: #fff; text-decoration: none; border-radius: 12px; transition: 0.3s; position: relative; }
+        .admin-btn:hover { background: var(--ss-red); transform: scale(1.1); }
+        .admin-tooltip { position: absolute; left: 60px; background: #000; color: #fff; padding: 5px 12px; border-radius: 8px; font-size: 0.75rem; white-space: nowrap; visibility: hidden; opacity: 0; transition: 0.3s; }
+        .admin-btn:hover .admin-tooltip { visibility: visible; opacity: 1; left: 55px; }
+
+        /* --- Navigation & Dropdown Fix --- */
+        .navbar { background-color: var(--ss-dark) !important; padding: 15px 0; border-bottom: 3px solid var(--ss-red); z-index: 1060; }
+        .dropdown-menu { min-width: 250px !important; border-radius: 20px !important; padding: 12px !important; box-shadow: 0 20px 50px rgba(0,0,0,0.3) !important; border: none !important; z-index: 9999 !important; }
         .dropdown-item { padding: 12px 20px !important; border-radius: 12px !important; font-weight: 500; transition: 0.3s; color: #333 !important; text-decoration: none !important; }
         .dropdown-item:hover { background: var(--ss-gray) !important; color: var(--ss-red) !important; }
 
-        /* --- Search System Fix --- */
-        .search-container { max-width: 900px; margin: 0 auto; position: relative; z-index: 1040; }
-        .search-input-group { background: white; border-radius: 50px; padding: 8px 8px 8px 25px; display: flex; align-items: center; border: 2px solid #eee; }
-        #search_results { width: 100%; display: none; background: white; z-index: 1030; box-shadow: 0 30px 60px rgba(0,0,0,0.2); position: absolute; top: 100%; left: 0; margin-top: 15px; border-radius: 25px; border: 1px solid #eee; padding: 25px; max-height: 500px; overflow-y: auto; }
+        /* --- Search System --- */
+        .search-container { max-width: 1000px; margin: 0 auto; position: relative; z-index: 1050; }
+        .search-input-group { background: white; border-radius: 50px; padding: 10px 10px 10px 30px; display: flex; align-items: center; border: 2px solid #eee; transition: 0.3s; }
+        #search_results { width: 100%; display: none; background: white; z-index: 1040; box-shadow: 0 30px 60px rgba(0,0,0,0.2); position: absolute; top: 100%; left: 0; margin-top: 15px; border-radius: 25px; border: 1px solid #eee; padding: 25px; max-height: 550px; overflow-y: auto; }
 
-        /* --- แก้ปัญหา Sidebar สีน้ำเงิน --- */
+        /* --- Sidebar & Product Cards Fix --- */
         .cat-group { display: flex; flex-direction: column; gap: 5px; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); max-height: 75vh; overflow-y: auto; }
         .filter-btn { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-radius: 12px; color: #555 !important; text-decoration: none !important; font-size: 0.9rem; transition: 0.3s; }
         .filter-btn:hover { background: var(--ss-gray); color: var(--ss-red) !important; }
         .filter-btn.active { background: var(--ss-dark); color: #fff !important; font-weight: 600; }
 
-        /* --- แก้ปัญหาภาพสินค้าล้น/หาย --- */
         .product-card { border: none; border-radius: 30px; transition: 0.4s; background: #fff; border: 1px solid #f0f0f0; position: relative; overflow: hidden; height: 100%; }
-        .product-img-wrapper { 
-            padding: 20px; 
-            height: 320px; /* เพิ่มความสูงเพื่อให้เห็นรูปเต็ม */
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            background: #fff;
-        }
-        .product-img { 
-            max-height: 100%; 
-            max-width: 100%; 
-            object-fit: contain; /* บังคับให้รูปอยู่ในกรอบไม่เบี้ยว */
-            transition: 0.5s;
-        }
-        .product-card:hover .product-img { transform: scale(1.05); }
-
+        .product-img-wrapper { padding: 20px; height: 300px; display: flex; align-items: center; justify-content: center; }
+        .product-img { max-height: 100%; max-width: 100%; object-fit: contain; transition: 0.5s; }
         .category-tag { position: absolute; top: 15px; left: 15px; padding: 5px 15px; border-radius: 50px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; z-index: 5; background: #eee; color: #333; }
         .tag-men { background: #111; color: #fff; }
         .tag-women { background: #ff4d94; color: #fff; }
     </style>
 </head>
 <body>
+
+<?php if($is_admin): ?>
+<div class="admin-sidebar shadow-lg">
+    <a href="admin_products.php" class="admin-btn"><i class="fas fa-boxes-stacked"></i><span class="admin-tooltip">จัดการสต็อก</span></a>
+    <a href="admin_orders.php" class="admin-btn"><i class="fas fa-file-invoice-dollar"></i><span class="admin-tooltip">ออเดอร์</span></a>
+    <a href="admin_customers.php" class="admin-btn"><i class="fas fa-users"></i><span class="admin-tooltip">ลูกค้า</span></a>
+    <div class="admin-btn" style="background: rgba(255,193,7,0.1);"><i class="fas fa-shield-halved text-warning"></i></div>
+</div>
+<?php endif; ?>
 
 <nav class="navbar navbar-expand-lg navbar-dark sticky-top shadow-sm">
     <div class="container">
@@ -111,7 +108,7 @@ $result = mysqli_query($conn, $sql);
             <div class="dropdown">
                 <a href="#" class="text-white text-decoration-none bg-white bg-opacity-10 py-2 px-3 rounded-pill d-flex align-items-center" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-user-circle me-2"></i> 
-                    <span class="small fw-bold text-uppercase"><?php echo isset($_SESSION['fullname']) ? explode(' ', $_SESSION['fullname'])[0] : 'LOGIN'; ?></span>
+                    <span class="small fw-bold text-uppercase d-none d-md-inline"><?php echo isset($_SESSION['fullname']) ? explode(' ', $_SESSION['fullname'])[0] : 'LOGIN'; ?></span>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end shadow-lg">
                     <?php if($is_logged_in): ?>
@@ -120,8 +117,8 @@ $result = mysqli_query($conn, $sql);
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger fw-bold" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a></li>
                     <?php else: ?>
-                        <li><a class="dropdown-item" href="login.php"><i class="fas fa-sign-in-alt me-2"></i> เข้าสู่ระบบ</a></li>
-                        <li><a class="dropdown-item" href="register.php"><i class="fas fa-user-plus me-2"></i> สมัครสมาชิก</a></li>
+                        <li><a class="dropdown-item" href="login.php">เข้าสู่ระบบ</a></li>
+                        <li><a class="dropdown-item" href="register.php">สมัครสมาชิก</a></li>
                     <?php endif; ?>
                 </ul>
             </div>
@@ -129,11 +126,11 @@ $result = mysqli_query($conn, $sql);
     </div>
 </nav>
 
-<div class="bg-white py-5 border-bottom" style="z-index: 1045; position: relative;">
+<div class="bg-white py-5 border-bottom" style="z-index: 1055; position: relative;">
     <div class="container">
         <form action="index.php" method="get" id="searchForm" class="search-container">
             <div class="search-input-group shadow-sm">
-                <input type="text" name="q" id="search_input" placeholder="ค้นหาแบรนด์หรือสินค้า..." value="<?php echo htmlspecialchars($search); ?>" autocomplete="off">
+                <input type="text" name="q" id="search_input" placeholder="ค้นหาแบรนด์หรือสินค้ากีฬาที่คุณต้องการ..." value="<?php echo htmlspecialchars($search); ?>" autocomplete="off">
                 <button type="submit" class="btn border-0"><i class="fas fa-search text-muted"></i></button>
             </div>
             <div id="search_results" class="text-start">
@@ -159,6 +156,11 @@ $result = mysqli_query($conn, $sql);
                 ?>
                     <a href="index.php?cat=<?= urlencode($fcat) ?>" class="filter-btn <?= ($cat == $fcat) ? 'active' : '' ?>"><?= $c['cat_name'] ?></a>
                 <?php endwhile; endforeach; ?>
+
+                <?php if($is_admin): ?>
+                    <hr>
+                    <a href="admin_categories.php" class="btn btn-sm btn-outline-dark w-100 rounded-pill"><i class="fas fa-edit me-1"></i> แก้ไข Tag ทั้งหมด</a>
+                <?php endif; ?>
             </div>
         </div>
 
