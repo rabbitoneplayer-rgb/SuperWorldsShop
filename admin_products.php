@@ -31,7 +31,6 @@ $result = mysqli_query($conn, $sql);
         .table tbody td { padding: 15px 20px; border-bottom: 1px solid #f1f1f1; vertical-align: middle; }
         .product-img-admin { width: 65px; height: 65px; object-fit: contain; background: #fff; border-radius: 12px; padding: 5px; border: 1px solid #eee; }
         
-        /* สไตล์ Badge แยกสี */
         .badge-cat { padding: 6px 12px; font-weight: 600; font-size: 0.65rem; border-radius: 50px; }
         .tag-men { background: #111; color: #fff; }
         .tag-women { background: #ff4d94; color: #fff; }
@@ -44,6 +43,10 @@ $result = mysqli_query($conn, $sql);
         .btn-action { width: 38px; height: 38px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; transition: 0.3s; border: none; }
         .btn-edit { background: #f0f7ff; color: #007bff; }
         .btn-del { background: #fff5f5; color: #dc3545; }
+        
+        /* สไตล์สำหรับปุ่ม Home */
+        .btn-home { background: var(--ss-dark); color: white; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: 0.3s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-home:hover { background: #333; color: white; transform: translateX(-5px); }
     </style>
 </head>
 <body>
@@ -51,7 +54,10 @@ $result = mysqli_query($conn, $sql);
 <div class="container my-5">
     <div class="row align-items-center mb-5">
         <div class="col-lg-6">
-            <h2 class="fw-bold m-0 text-dark">ระบบจัดการสต็อกสินค้า</h2>
+            <div class="d-flex align-items-center gap-3">
+                <a href="index.php" class="btn-home"><i class="fas fa-home"></i> กลับหน้าหลัก</a>
+                <h2 class="fw-bold m-0 text-dark">จัดการสต็อกสินค้า</h2>
+            </div>
         </div>
         <div class="col-lg-6 text-lg-end mt-3 mt-lg-0">
             <button class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addProductModal">
@@ -208,7 +214,6 @@ function editProduct(id, name, brand, price, category, gender) {
     }).then((result) => {
         if (result.isConfirmed) {
             const d = result.value;
-            // ส่วนที่แก้ไข: เพิ่ม &gender เข้าไปใน URL เพื่อส่งไปบันทึก
             window.location.href = `admin_action.php?act=edit_full&id=${d.id}&name=${encodeURIComponent(d.name)}&brand=${encodeURIComponent(d.brand)}&price=${d.price}&category=${encodeURIComponent(d.category)}&gender=${encodeURIComponent(d.gender)}`;
         }
     });
