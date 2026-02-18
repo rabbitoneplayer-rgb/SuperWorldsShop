@@ -55,35 +55,50 @@ $result = mysqli_query($conn, $sql);
         .navbar { background-color: var(--ss-dark) !important; padding: 15px 0; border-bottom: 3px solid var(--ss-red); z-index: 1050; }
         .navbar-brand { font-size: 1.8rem; font-weight: 800; }
         
-        /* แก้ไขปัญหาเมนูทับกัน บังคับให้เมนูอยู่สูงที่สุด */
         .dropdown-menu { 
             min-width: 250px !important; 
             border-radius: 20px !important; 
             padding: 12px !important; 
             box-shadow: 0 20px 50px rgba(0,0,0,0.3) !important;
             margin-top: 15px !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
+            border: none !important;
             z-index: 9999 !important; 
         }
-        .dropdown-item { padding: 12px 20px !important; border-radius: 12px !important; font-weight: 500; transition: 0.3s; }
-        .dropdown-item:hover { background: var(--ss-gray); color: var(--ss-red); }
+        .dropdown-item { padding: 12px 20px !important; border-radius: 12px !important; font-weight: 500; transition: 0.3s; color: #333 !important; text-decoration: none !important; }
+        .dropdown-item:hover { background: var(--ss-gray) !important; color: var(--ss-red) !important; }
 
         /* --- Search System Fix --- */
         .search-container { max-width: 900px; margin: 0 auto; position: relative; z-index: 1040; }
         .search-input-group { background: white; border-radius: 50px; padding: 8px 8px 8px 25px; display: flex; align-items: center; border: 2px solid #eee; }
-        
-        /* แก้ไขหน้าผลลัพธ์ไม่ให้เบี้ยวและบังเมนู */
-        #search_results { 
-            width: 100%; display: none; background: white; z-index: 1030; 
-            box-shadow: 0 30px 60px rgba(0,0,0,0.2); position: absolute; 
-            top: 100%; left: 0; margin-top: 15px; border-radius: 25px; 
-            border: 1px solid #eee; padding: 25px; max-height: 500px; overflow-y: auto;
-        }
+        #search_results { width: 100%; display: none; background: white; z-index: 1030; box-shadow: 0 30px 60px rgba(0,0,0,0.2); position: absolute; top: 100%; left: 0; margin-top: 15px; border-radius: 25px; border: 1px solid #eee; padding: 25px; max-height: 500px; overflow-y: auto; }
 
-        /* --- UI Components --- */
+        /* --- แก้ปัญหา Sidebar สีน้ำเงิน --- */
         .cat-group { display: flex; flex-direction: column; gap: 5px; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); max-height: 75vh; overflow-y: auto; }
+        .filter-btn { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-radius: 12px; color: #555 !important; text-decoration: none !important; font-size: 0.9rem; transition: 0.3s; }
+        .filter-btn:hover { background: var(--ss-gray); color: var(--ss-red) !important; }
+        .filter-btn.active { background: var(--ss-dark); color: #fff !important; font-weight: 600; }
+
+        /* --- แก้ปัญหาภาพสินค้าล้น/หาย --- */
         .product-card { border: none; border-radius: 30px; transition: 0.4s; background: #fff; border: 1px solid #f0f0f0; position: relative; overflow: hidden; height: 100%; }
-        .category-tag { position: absolute; top: 15px; left: 15px; padding: 5px 15px; border-radius: 50px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; z-index: 5; background: #eee; }
+        .product-img-wrapper { 
+            padding: 20px; 
+            height: 320px; /* เพิ่มความสูงเพื่อให้เห็นรูปเต็ม */
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: #fff;
+        }
+        .product-img { 
+            max-height: 100%; 
+            max-width: 100%; 
+            object-fit: contain; /* บังคับให้รูปอยู่ในกรอบไม่เบี้ยว */
+            transition: 0.5s;
+        }
+        .product-card:hover .product-img { transform: scale(1.05); }
+
+        .category-tag { position: absolute; top: 15px; left: 15px; padding: 5px 15px; border-radius: 50px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; z-index: 5; background: #eee; color: #333; }
+        .tag-men { background: #111; color: #fff; }
+        .tag-women { background: #ff4d94; color: #fff; }
     </style>
 </head>
 <body>
@@ -96,18 +111,17 @@ $result = mysqli_query($conn, $sql);
             <div class="dropdown">
                 <a href="#" class="text-white text-decoration-none bg-white bg-opacity-10 py-2 px-3 rounded-pill d-flex align-items-center" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-user-circle me-2"></i> 
-                    <span class="small fw-bold text-uppercase d-none d-md-inline"><?php echo isset($_SESSION['fullname']) ? explode(' ', $_SESSION['fullname'])[0] : 'LOGIN'; ?></span>
-                    <?php if($is_admin): ?><span class="badge bg-danger ms-2" style="font-size: 0.6rem;">ADMIN</span><?php endif; ?>
+                    <span class="small fw-bold text-uppercase"><?php echo isset($_SESSION['fullname']) ? explode(' ', $_SESSION['fullname'])[0] : 'LOGIN'; ?></span>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end shadow-lg">
                     <?php if($is_logged_in): ?>
-                        <li><a class="dropdown-item" href="profile.php"><i class="fas fa-user-circle me-2 text-muted"></i> โปรไฟล์ของฉัน</a></li>
-                        <li><a class="dropdown-item" href="order_history.php"><i class="fas fa-history me-2 text-muted"></i> ประวัติการซื้อ</a></li>
+                        <li><a class="dropdown-item" href="profile.php"><i class="fas fa-user-circle me-2"></i> โปรไฟล์ของฉัน</a></li>
+                        <li><a class="dropdown-item" href="order_history.php"><i class="fas fa-history me-2"></i> ประวัติการซื้อ</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger fw-bold" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i> ออกจากระบบ</a></li>
                     <?php else: ?>
-                        <li><a class="dropdown-item" href="login.php"><i class="fas fa-sign-in-alt me-2 text-muted"></i> เข้าสู่ระบบ</a></li>
-                        <li><a class="dropdown-item" href="register.php"><i class="fas fa-user-plus me-2 text-muted"></i> สมัครสมาชิก</a></li>
+                        <li><a class="dropdown-item" href="login.php"><i class="fas fa-sign-in-alt me-2"></i> เข้าสู่ระบบ</a></li>
+                        <li><a class="dropdown-item" href="register.php"><i class="fas fa-user-plus me-2"></i> สมัครสมาชิก</a></li>
                     <?php endif; ?>
                 </ul>
             </div>
@@ -164,10 +178,10 @@ $result = mysqli_query($conn, $sql);
                             <div class="product-img-wrapper">
                                 <a href="product_detail.php?id=<?= $row['p_id'] ?>"><img src="<?= $row['p_image'] ?>" class="product-img" onerror="this.src='https://placehold.co/400x400'"></a>
                             </div>
-                            <div class="card-body p-4 pt-0">
+                            <div class="card-body p-4 pt-0 text-center">
                                 <div class="text-muted small fw-bold text-uppercase mb-1"><?= $row['p_brand'] ?></div>
                                 <h6 class="fw-bold mb-3" style="height:38px; overflow:hidden;"><?= $row['p_name'] ?></h6>
-                                <div class="h5 fw-800 mb-3">฿<?= number_format($row['p_price']) ?></div>
+                                <div class="h5 fw-800 mb-3" style="color: var(--ss-dark);">฿<?= number_format($row['p_price']) ?></div>
                                 <button class="btn btn-dark w-100 rounded-pill add-to-cart-btn" data-id="<?= $row['p_id'] ?>">ใส่ตะกร้า</button>
                             </div>
                         </div>
@@ -192,21 +206,10 @@ $(document).ready(function(){
             success: function(data) { $('#ajax_content').html(data); }
         });
     }
-
-    // คลิกช่องค้นหาแล้วแสดงผลลัพธ์ทันที
-    $('#search_input').on('focus', function(){ 
-        $('#search_results').fadeIn(200); 
-        performSearch($(this).val()); 
-    });
-
+    $('#search_input').on('focus', function(){ $('#search_results').fadeIn(200); performSearch($(this).val()); });
     $('#search_input').on('keyup', function(){ performSearch($(this).val()); });
+    $(document).click(function(e) { if (!$(e.target).closest('#searchForm').length) $('#search_results').fadeOut(200); });
 
-    // คลิกข้างนอกเพื่อปิดหน้าต่างค้นหา
-    $(document).click(function(e) { 
-        if (!$(e.target).closest('#searchForm').length) $('#search_results').fadeOut(200); 
-    });
-
-    // ปุ่มเพิ่มลงตะกร้า
     $('.add-to-cart-btn').click(function(e) {
         if (!<?= $is_logged_in ? 'true' : 'false' ?>) {
             Swal.fire({ title: 'กรุณาเข้าสู่ระบบ', icon: 'warning', confirmButtonColor: '#111' }).then(r => { if(r.isConfirmed) window.location.href='login.php'; });
@@ -216,7 +219,7 @@ $(document).ready(function(){
         $.ajax({
             url: 'cart_action.php', type: 'GET', data: { id: p_id, action: 'add', ajax: 1 },
             success: function(res) {
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เพิ่มลงตะกร้าแล้ว', showConfirmButton: false, timer: 1500 });
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เพิ่มแล้ว', showConfirmButton: false, timer: 1500 });
                 $('#cart-badge').text(res);
             }
         });
