@@ -157,16 +157,18 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
                     <a href="index.php" class="filter-btn <?= ($cat == '') ? 'active' : '' ?>">ทั้งหมด <i class="fas fa-th-large"></i></a>
 
                     <?php
-                    // ดึงกลุ่มหมวดหมู่หลักออกมา
+                    // นิยามกลุ่มหลักเพื่อใช้ในการแสดงผล
                     $groups = ['SHOES' => 'รองเท้า', 'APPAREL' => 'เสื้อผ้า', 'GEAR' => 'อุปกรณ์'];
                     foreach ($groups as $key => $label):
                     ?>
                         <div class="cat-header mt-3"><?= $label ?></div>
                         <?php
-                        // ดึง Tag ย่อยที่แอดมินสร้างไว้ในกลุ่มนั้นๆ จากตาราง categories
+                        // ดึง Tag ย่อยที่แอดมินสร้างไว้ในแต่ละกลุ่มมาจากตาราง categories
                         $cat_query = mysqli_query($conn, "SELECT * FROM categories WHERE cat_group = '$key'");
                         if($cat_query) {
                             while ($c_row = mysqli_fetch_array($cat_query)):
+                                // Logic สำหรับการตั้งชื่อ Link ให้ตรงกับ Logic การ Query สินค้าด้านล่าง
+                                // หากเป็นอุปกรณ์จะไม่เติมชื่อกลุ่มข้างหน้า
                                 $full_cat_name = ($key == 'GEAR') ? $c_row['cat_name'] : $label . $c_row['cat_name'];
                             ?>
                                 <a href="index.php?cat=<?= $full_cat_name ?>" class="filter-btn <?= ($cat == $full_cat_name) ? 'active' : '' ?>">
@@ -175,17 +177,23 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
                             <?php endwhile;
                         } ?>
                     <?php endforeach; ?>
+
+                    <?php if($is_admin): ?>
+                        <hr>
+                        <a href="admin_categories.php" class="btn btn-sm btn-outline-dark w-100 rounded-pill"><i class="fas fa-edit me-1"></i> แก้ไข Tag ทั้งหมด</a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-9">
-            <div class="d-flex justify-content-between align-items-end mb-4">
-                <h2 class="fw-bold m-0"><?php echo ($cat != '') ? str_replace('ชาย', 'ผู้ชาย', str_replace('หญิง', 'ผู้หญิง', $cat)) : 'สินค้าทั้งหมด'; ?></h2>
+            <div class="d-flex justify-content-between align-items-end mb-4 px-3">
+                <h2 class="fw-bold m-0"><?php echo ($cat != '') ? str_replace(['ชาย', 'หญิง'], ['ผู้ชาย', 'ผู้หญิง'], $cat) : 'สินค้าแนะนำ'; ?></h2>
                 <span class="text-muted small">พบ <?php 
                     $count_q = "SELECT COUNT(*) as total FROM products WHERE 1";
                     if ($search) { $count_q .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%')"; }
                     if ($cat) {
+                        // ปรับปรุงการนับจำนวนให้ตรงกับ Logic การแสดงผล
                         if ($cat == 'รองเท้าชาย') { $count_q .= " AND p_category = 'รองเท้า' AND p_gender = 'ชาย'"; }
                         elseif ($cat == 'รองเท้าหญิง') { $count_q .= " AND p_category = 'รองเท้า' AND p_gender = 'หญิง'"; }
                         elseif ($cat == 'เสื้อผ้าชาย') { $count_q .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'ชาย'"; }
@@ -199,6 +207,7 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
 
             <div class="row g-4">
                 <?php
+                // --- ส่วนดึงข้อมูลสินค้าพร้อมรองรับหมวดหมู่แบบไดนามิก ---
                 $sql = "SELECT * FROM products WHERE 1";
                 if ($search) { $sql .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%')"; }
                 if ($cat) {
@@ -216,8 +225,8 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
                         $p_cat = $row['p_category'];
                         $gender = $row['p_gender'] ?? 'Unisex';
                         $tag_class = "tag-default";
-                        if ($gender == 'ชาย' || strpos($row['p_name'], 'Men') !== false) $tag_class = "tag-men";
-                        if ($gender == 'หญิง' || strpos($row['p_name'], 'Women') !== false) $tag_class = "tag-women";
+                        if ($gender == 'ชาย') $tag_class = "tag-men";
+                        if ($gender == 'หญิง') $tag_class = "tag-women";
                 ?>
                     <div class="col-6 col-md-4">
                         <div class="card product-card">
@@ -237,7 +246,7 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
                             </div>
                         </div>
                     </div>
-                <?php } } else { echo '<div class="col-12 text-center py-5 opacity-50"><h4>ไม่พบสินค้าในหมวดหมู่นี้</h4></div>'; } ?>
+                <?php } } else { echo '<div class="col-12 text-center py-5 opacity-50"><h4>ไม่พบสินค้า</h4></div>'; } ?>
             </div>
         </div>
     </div>
