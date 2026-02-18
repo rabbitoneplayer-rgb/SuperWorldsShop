@@ -57,6 +57,10 @@ if (strpos($category, 'ชาย') !== false || strpos($p_name, 'Men') !== false
         :root { --ss-red: #e12128; --ss-dark: #111111; --ss-gray: #f8f9fa; --ss-border: #eee; }
         body { font-family: 'Kanit', sans-serif; background-color: #fff; color: #333; }
         
+        /* ปุ่มย้อนกลับ */
+        .back-btn { display: inline-flex; align-items: center; gap: 10px; color: #888; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: 0.3s; margin-bottom: 25px; }
+        .back-btn:hover { color: var(--ss-dark); transform: translateX(-5px); }
+
         /* Tag Styling */
         .detail-tags-wrapper { display: flex; gap: 10px; margin-bottom: 15px; }
         .gender-tag { padding: 4px 15px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
@@ -100,12 +104,19 @@ if (strpos($category, 'ชาย') !== false || strpos($p_name, 'Men') !== false
 <div class="admin-bar no-print">
     <div class="container d-flex justify-content-between align-items-center">
         <span class="fw-bold small"><i class="fas fa-user-shield me-2 text-danger"></i> ADMIN EDIT MODE: <?php echo $row['p_name']; ?></span>
-        <button class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="location.reload()"><i class="fas fa-sync"></i></button>
+        <div class="d-flex gap-2">
+            <a href="admin_products.php" class="btn btn-sm btn-danger rounded-pill px-3">คลังสินค้า</a>
+            <button class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="location.reload()"><i class="fas fa-sync"></i></button>
+        </div>
     </div>
 </div>
 <?php endif; ?>
 
-<div class="container mt-5 mb-5 pt-3">
+<div class="container mt-4 mb-5 pt-3">
+    <a href="index.php" class="back-btn">
+        <i class="fas fa-arrow-left"></i> ย้อนกลับหน้าหลัก
+    </a>
+
     <div class="row g-lg-5">
         <div class="col-lg-6">
             <div class="gallery-container">
