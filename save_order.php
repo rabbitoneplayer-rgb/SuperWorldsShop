@@ -10,7 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
     $address = mysqli_real_escape_string($conn, $_POST['address']);
     $total_amount = mysqli_real_escape_string($conn, $_POST['total_amount']);
     
-    // 1. จัดการไฟล์สลิป
     $slip_name = ""; 
     $target_dir = "img/slips/"; 
 
@@ -19,17 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
         $ext = pathinfo($_FILES['payment_slip']['name'], PATHINFO_EXTENSION);
         $new_name = "slip_" . $u_id . "_" . time() . "." . $ext;
         $target_file = $target_dir . $new_name;
-
         if (move_uploaded_file($_FILES['payment_slip']['tmp_name'], $target_file)) {
             $slip_name = $new_name;
-        } else {
-            echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
-                  <script>window.onload = () => { Swal.fire({icon:'error', title:'อัปโหลดไม่สำเร็จ', text:'ตรวจสอบ Permission โฟลเดอร์ img/slips/'}).then(()=>window.history.back()); };</script>";
-            exit();
         }
     }
 
-    // 2. ดึงสินค้าในตะกร้า
     $product_list = [];
     if (isset($_SESSION['cart'])) {
         foreach ($_SESSION['cart'] as $id => $qty) {
@@ -40,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
     }
     $o_product = mysqli_real_escape_string($conn, implode(", ", $product_list));
 
-    // --- ส่วนแสดงผลหน้าจอขณะประมวลผล (UI ใหม่) ---
+    // --- ส่วนตกแต่ง Typography และ UI ---
     echo "<!DOCTYPE html>
     <html lang='th'>
     <head>
@@ -49,28 +42,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
         <title>บันทึกออเดอร์ | SUPERWORLDS</title>
         <script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>
         <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css'>
-        <link href='https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap' rel='stylesheet'>
+        <link href='https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900&display=swap' rel='stylesheet'>
         <style>
-            body { font-family: 'Kanit', sans-serif; background-color: #f4f7f6; height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
-            #processing-box { text-align: center; background: white; padding: 60px; border-radius: 40px; box-shadow: 0 25px 60px rgba(0,0,0,0.06); max-width: 450px; width: 90%; }
+            body { 
+                font-family: 'Kanit', sans-serif; 
+                background-color: #f4f7f6; 
+                height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; 
+            }
+            #processing-box { 
+                text-align: center; background: white; padding: 60px; border-radius: 40px; 
+                box-shadow: 0 25px 60px rgba(0,0,0,0.06); max-width: 450px; width: 90%; 
+            }
             .loader { color: #e12128; font-size: 4rem; margin-bottom: 30px; animation: spin 1.5s linear infinite; }
             @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            h4 { font-weight: 700; color: #111; margin-bottom: 10px; letter-spacing: 0.5px; }
-            p { color: #888; font-size: 0.95rem; }
-            .swal2-popup { border-radius: 35px !important; padding: 2em !important; }
-            .swal2-title { font-weight: 700 !important; color: #111 !important; }
-            .swal2-confirm { border-radius: 50px !important; padding: 12px 30px !important; font-weight: 600 !important; }
-            .swal2-cancel { border-radius: 50px !important; padding: 12px 30px !important; font-weight: 600 !important; }
+            
+            /* ปรับแต่งฟอนต์ในกล่องโหลดดิ้ง */
+            h4 { font-weight: 600; color: #111; margin-bottom: 10px; letter-spacing: -0.5px; font-size: 1.5rem; }
+            p { color: #888; font-size: 1rem; font-weight: 300; }
+
+            /* ปรับแต่งฟอนต์ใน SweetAlert */
+            .swal2-popup { border-radius: 35px !important; padding: 2.5em !important; font-family: 'Kanit', sans-serif !important; }
+            .swal2-title { font-weight: 700 !important; color: #111 !important; font-size: 1.8rem !important; letter-spacing: -0.8px !important; }
+            .swal2-html-container { font-size: 1.1rem !important; color: #666 !important; font-weight: 300 !important; line-height: 1.6 !important; }
+            .swal2-confirm { border-radius: 50px !important; padding: 14px 35px !important; font-weight: 600 !important; font-size: 1rem !important; letter-spacing: 0.5px !important; }
+            .swal2-cancel { border-radius: 50px !important; padding: 14px 35px !important; font-weight: 600 !important; font-size: 1rem !important; }
         </style>
     </head>
     <body>
         <div id='processing-box'>
             <i class='fas fa-circle-notch loader'></i>
-            <h4>กำลังบันทึกคำสั่งซื้อ</h4>
-            <p>กรุณารอสักครู่ ระบบกำลังจัดเตรียมข้อมูลให้คุณ...</p>
+            <h4>กำลังสร้างออเดอร์</h4>
+            <p>กรุณารอสักครู่ ระบบกำลังจัดเตรียมข้อมูล...</p>
         </div>";
 
-    // 3. บันทึกข้อมูล
     $sql_order = "INSERT INTO orders (u_id, o_name, o_phone, o_address, o_total, o_status, o_date, o_product, o_slip) 
                   VALUES ('$u_id', '$fullname', '$phone', '$address', '$total_amount', 'รอดำเนินการ', NOW(), '$o_product', '$slip_name')";
     
@@ -82,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
                 document.getElementById('processing-box').style.display = 'none';
                 Swal.fire({
                     title: 'สั่งซื้อสำเร็จเรียบร้อย!',
-                    text: 'ขอบคุณที่เลือกช้อปกับ SUPERWORLDS ออเดอร์ของคุณได้รับเรียบร้อยแล้ว',
+                    html: 'ขอบคุณที่เลือกช้อปกับ <b>SUPERWORLDS</b><br>ออเดอร์ของคุณได้รับเรียบร้อยแล้ว',
                     icon: 'success',
                     iconColor: '#e12128',
                     showCancelButton: true,
@@ -102,13 +106,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
             }, 1800);
         </script>";
     } else {
-        $error_msg = mysqli_error($conn);
         echo "<script>
             document.getElementById('processing-box').style.display = 'none';
             Swal.fire({ 
                 icon: 'error', 
                 title: 'เกิดข้อผิดพลาด', 
-                text: '$error_msg', 
+                text: '" . mysqli_error($conn) . "', 
                 confirmButtonColor: '#111' 
             }).then(() => { window.history.back(); });
         </script>";
