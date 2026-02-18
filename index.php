@@ -2,8 +2,8 @@
 session_start(); 
 include_once("connectdb.php"); 
 
-$cat = isset($_GET['cat']) ? $_GET['cat'] : '';
-$search = isset($_GET['q']) ? $_GET['q'] : '';
+$cat = isset($_GET['cat']) ? mysqli_real_escape_string($conn, $_GET['cat']) : '';
+$search = isset($_GET['q']) ? mysqli_real_escape_string($conn, $_GET['q']) : '';
 
 // ส่วนนับจำนวนสินค้าในตะกร้า
 $cart_count = 0;
@@ -26,53 +26,32 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root { --ss-red: #e12128; --ss-dark: #111111; --ss-gray: #f8f9fa; }
-        body { font-family: 'Kanit', sans-serif; background-color: var(--ss-gray); color: #333; margin: 0; padding: 0; }
+        body { font-family: 'Kanit', sans-serif; background-color: var(--ss-gray); color: #333; margin: 0; padding: 0; overflow-x: hidden; }
         
         /* --- Floating Admin Sidebar --- */
-        .admin-sidebar { 
-            position: fixed; left: 20px; top: 50%; transform: translateY(-50%); 
-            background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
-            padding: 15px 10px; border-radius: 20px; z-index: 9999;
-            display: flex; flex-direction: column; gap: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
-        }
-        .admin-btn { 
-            width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;
-            color: #fff; text-decoration: none; border-radius: 12px; transition: 0.3s;
-            position: relative;
-        }
+        .admin-sidebar { position: fixed; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); padding: 15px 10px; border-radius: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
+        .admin-btn { width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; color: #fff; text-decoration: none; border-radius: 12px; transition: 0.3s; position: relative; }
         .admin-btn:hover { background: var(--ss-red); transform: scale(1.1); }
-        .admin-tooltip {
-            position: absolute; left: 60px; background: #000; color: #fff; padding: 5px 12px;
-            border-radius: 8px; font-size: 0.75rem; white-space: nowrap; visibility: hidden; opacity: 0;
-            transition: 0.3s;
-        }
+        .admin-tooltip { position: absolute; left: 60px; background: #000; color: #fff; padding: 5px 12px; border-radius: 8px; font-size: 0.75rem; white-space: nowrap; visibility: hidden; opacity: 0; transition: 0.3s; }
         .admin-btn:hover .admin-tooltip { visibility: visible; opacity: 1; left: 55px; }
 
         /* --- Navigation --- */
         .navbar { background-color: var(--ss-dark) !important; padding: 15px 0; border-bottom: 3px solid var(--ss-red); }
         .navbar-brand { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; }
 
-        /* --- Sidebar Category Style --- */
-        .cat-group { display: flex; flex-direction: column; gap: 5px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+        /* --- Sidebar Category (Fixed Overlapping) --- */
+        .cat-group { display: flex; flex-direction: column; gap: 5px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); max-height: calc(100vh - 150px); overflow-y: auto; }
         .cat-header { font-weight: 800; text-transform: uppercase; font-size: 0.75rem; color: #bbb; letter-spacing: 1.5px; margin-bottom: 10px; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px; }
-        .filter-btn { 
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 10px 15px; border-radius: 12px; color: #555; text-decoration: none; 
-            font-size: 0.9rem; font-weight: 400; transition: 0.3s;
-        }
+        .filter-btn { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-radius: 12px; color: #555; text-decoration: none; font-size: 0.9rem; font-weight: 400; transition: 0.3s; }
         .filter-btn:hover { background: var(--ss-gray); color: var(--ss-red); transform: translateX(5px); }
         .filter-btn.active { background: var(--ss-dark); color: #fff; font-weight: 600; }
 
-        /* --- Search Bar & Results --- */
+        /* --- Search Bar --- */
         .search-container { max-width: 800px; margin: 0 auto; position: relative; }
         .search-input-group { background: white; border-radius: 50px; padding: 8px 8px 8px 25px; display: flex; align-items: center; border: 2px solid #eee; }
         .search-input-group input { border: none; outline: none; flex: 1; font-size: 1rem; }
         .btn-search { background: var(--ss-dark); color: white; border-radius: 50px; width: 45px; height: 45px; border: none; }
-        #search_results { 
-            width: 100%; display: none; background: white; z-index: 9990; box-shadow: 0 25px 60px rgba(0,0,0,0.2); 
-            position: absolute; margin-top: 15px; border-radius: 20px; overflow: hidden;
-        }
+        #search_results { width: 100%; display: none; background: white; z-index: 9990; box-shadow: 0 25px 60px rgba(0,0,0,0.2); position: absolute; margin-top: 15px; border-radius: 20px; overflow: hidden; }
 
         /* --- Product Card & Tags --- */
         .product-card { border: none; border-radius: 25px; transition: 0.4s; background: #fff; height: 100%; border: 1px solid #f0f0f0; position: relative; }
@@ -80,10 +59,7 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
         .product-img-wrapper { padding: 30px; height: 260px; display: flex; align-items: center; justify-content: center; position: relative; }
         .product-img { max-height: 100%; max-width: 100%; object-fit: contain; }
         
-        .category-tag {
-            position: absolute; top: 15px; left: 15px; padding: 4px 12px; border-radius: 50px;
-            font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; z-index: 5;
-        }
+        .category-tag { position: absolute; top: 15px; left: 15px; padding: 4px 12px; border-radius: 50px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; z-index: 5; }
         .tag-men { background: #111; color: #fff; }
         .tag-women { background: #ff4d94; color: #fff; }
         .tag-default { background: #eee; color: #333; }
@@ -102,7 +78,6 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
     <a href="admin_products.php" class="admin-btn"><i class="fas fa-boxes-stacked"></i><span class="admin-tooltip">จัดการสต็อก</span></a>
     <a href="admin_orders.php" class="admin-btn"><i class="fas fa-file-invoice-dollar"></i><span class="admin-tooltip">ออเดอร์</span></a>
     <a href="admin_customers.php" class="admin-btn"><i class="fas fa-users"></i><span class="admin-tooltip">ลูกค้า</span></a>
-    <div class="admin-btn" style="background: rgba(255,193,7,0.1);"><i class="fas fa-shield-halved text-warning"></i></div>
 </div>
 <?php endif; ?>
 
@@ -127,7 +102,6 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
                         <li><a class="dropdown-item py-2 rounded-3 text-danger" href="logout.php">ออกจากระบบ</a></li>
                     <?php else: ?>
                         <li><a class="dropdown-item py-2 rounded-3" href="login.php">เข้าสู่ระบบ</a></li>
-                        <li><a class="dropdown-item py-2 rounded-3" href="register.php">สมัครสมาชิก</a></li>
                     <?php endif; ?>
                 </ul>
             </div>
@@ -140,7 +114,7 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
         <h6 class="text-danger fw-bold text-uppercase mb-3" style="letter-spacing: 3px;">Search our collection</h6>
         <form action="index.php" method="get" id="searchForm" class="search-container">
             <div class="search-input-group">
-                <input type="text" name="q" id="search_input" placeholder="ค้นหาแบรนด์, ชื่อสินค้า หรือประเภท..." value="<?php echo htmlspecialchars($search); ?>" autocomplete="off">
+                <input type="text" name="q" id="search_input" placeholder="ค้นหาแบรนด์หรือสินค้า..." value="<?php echo htmlspecialchars($search); ?>" autocomplete="off">
                 <button type="submit" class="btn-search"><i class="fas fa-search"></i></button>
             </div>
             <div id="search_results"></div>
@@ -157,25 +131,19 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
                     <a href="index.php" class="filter-btn <?= ($cat == '') ? 'active' : '' ?>">ทั้งหมด <i class="fas fa-th-large"></i></a>
 
                     <?php
-                    // นิยามกลุ่มหลักเพื่อใช้ในการแสดงผล
                     $groups = ['SHOES' => 'รองเท้า', 'APPAREL' => 'เสื้อผ้า', 'GEAR' => 'อุปกรณ์'];
                     foreach ($groups as $key => $label):
                     ?>
                         <div class="cat-header mt-3"><?= $label ?></div>
                         <?php
-                        // ดึง Tag ย่อยที่แอดมินสร้างไว้ในแต่ละกลุ่มมาจากตาราง categories
                         $cat_query = mysqli_query($conn, "SELECT * FROM categories WHERE cat_group = '$key'");
-                        if($cat_query) {
-                            while ($c_row = mysqli_fetch_array($cat_query)):
-                                // Logic สำหรับการตั้งชื่อ Link ให้ตรงกับ Logic การ Query สินค้าด้านล่าง
-                                // หากเป็นอุปกรณ์จะไม่เติมชื่อกลุ่มข้างหน้า
-                                $full_cat_name = ($key == 'GEAR') ? $c_row['cat_name'] : $label . $c_row['cat_name'];
-                            ?>
-                                <a href="index.php?cat=<?= $full_cat_name ?>" class="filter-btn <?= ($cat == $full_cat_name) ? 'active' : '' ?>">
-                                    <?= $c_row['cat_name'] ?>
-                                </a>
-                            <?php endwhile;
-                        } ?>
+                        while ($c_row = mysqli_fetch_array($cat_query)):
+                            $full_cat_name = ($key == 'GEAR') ? $c_row['cat_name'] : $label . $c_row['cat_name'];
+                        ?>
+                            <a href="index.php?cat=<?= $full_cat_name ?>" class="filter-btn <?= ($cat == $full_cat_name) ? 'active' : '' ?>">
+                                <?= $c_row['cat_name'] ?>
+                            </a>
+                        <?php endwhile; ?>
                     <?php endforeach; ?>
 
                     <?php if($is_admin): ?>
@@ -187,46 +155,43 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
         </div>
 
         <div class="col-lg-9">
-            <div class="d-flex justify-content-between align-items-end mb-4 px-3">
-                <h2 class="fw-bold m-0"><?php echo ($cat != '') ? str_replace(['ชาย', 'หญิง'], ['ผู้ชาย', 'ผู้หญิง'], $cat) : 'สินค้าแนะนำ'; ?></h2>
+            <div class="d-flex justify-content-between align-items-end mb-4">
+                <h2 class="fw-bold m-0"><?php echo ($cat != '') ? str_replace(['ชาย', 'หญิง'], ['ผู้ชาย', 'ผู้หญิง'], $cat) : 'สินค้าทั้งหมด'; ?></h2>
                 <span class="text-muted small">พบ <?php 
-                    $count_q = "SELECT COUNT(*) as total FROM products WHERE 1";
-                    if ($search) { $count_q .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%')"; }
+                    // SQL นับจำนวนที่แก้ไขใหม่ให้ตรงกับสินค้าที่แสดงจริง
+                    $sql_count = "SELECT COUNT(*) as total FROM products WHERE 1";
+                    if ($search) { $sql_count .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%' OR p_category LIKE '%$search%')"; }
                     if ($cat) {
-                        // ปรับปรุงการนับจำนวนให้ตรงกับ Logic การแสดงผล
-                        if ($cat == 'รองเท้าชาย') { $count_q .= " AND p_category = 'รองเท้า' AND p_gender = 'ชาย'"; }
-                        elseif ($cat == 'รองเท้าหญิง') { $count_q .= " AND p_category = 'รองเท้า' AND p_gender = 'หญิง'"; }
-                        elseif ($cat == 'เสื้อผ้าชาย') { $count_q .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'ชาย'"; }
-                        elseif ($cat == 'เสื้อผ้าหญิง') { $count_q .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'หญิง'"; }
-                        else { $count_q .= " AND p_category LIKE '%$cat%'"; }
+                        if ($cat == 'รองเท้าชาย') { $sql_count .= " AND p_category = 'รองเท้า' AND p_gender = 'ชาย'"; }
+                        elseif ($cat == 'รองเท้าหญิง') { $sql_count .= " AND p_category = 'รองเท้า' AND p_gender = 'หญิง'"; }
+                        elseif ($cat == 'เสื้อผ้าชาย') { $sql_count .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'ชาย'"; }
+                        elseif ($cat == 'เสื้อผ้าหญิง') { $sql_count .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'หญิง'"; }
+                        else { $sql_count .= " AND (p_category LIKE '%$cat%' OR p_gender LIKE '%$cat%')"; }
                     }
-                    $count_res = mysqli_query($conn, $count_q);
+                    $count_res = mysqli_query($conn, $sql_count);
                     echo mysqli_fetch_array($count_res)['total'];
                 ?> รายการ</span>
             </div>
 
             <div class="row g-4">
                 <?php
-                // --- ส่วนดึงข้อมูลสินค้าพร้อมรองรับหมวดหมู่แบบไดนามิก ---
+                // --- ส่วนดึงข้อมูลสินค้า (Logic แก้ไขใหม่) ---
                 $sql = "SELECT * FROM products WHERE 1";
-                if ($search) { $sql .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%')"; }
+                if ($search) { $sql .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%' OR p_category LIKE '%$search%')"; }
                 if ($cat) {
                     if ($cat == 'รองเท้าชาย') { $sql .= " AND p_category = 'รองเท้า' AND p_gender = 'ชาย'"; }
                     elseif ($cat == 'รองเท้าหญิง') { $sql .= " AND p_category = 'รองเท้า' AND p_gender = 'หญิง'"; }
                     elseif ($cat == 'เสื้อผ้าชาย') { $sql .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'ชาย'"; }
                     elseif ($cat == 'เสื้อผ้าหญิง') { $sql .= " AND p_category = 'เสื้อผ้า' AND p_gender = 'หญิง'"; }
-                    else { $sql .= " AND p_category LIKE '%$cat%'"; }
+                    else { $sql .= " AND (p_category LIKE '%$cat%' OR p_gender LIKE '%$cat%')"; }
                 }
                 $sql .= " ORDER BY p_id DESC";
                 $result = mysqli_query($conn, $sql);
                 
                 if(mysqli_num_rows($result) > 0) {
                     while($row = mysqli_fetch_array($result)) {
-                        $p_cat = $row['p_category'];
                         $gender = $row['p_gender'] ?? 'Unisex';
-                        $tag_class = "tag-default";
-                        if ($gender == 'ชาย') $tag_class = "tag-men";
-                        if ($gender == 'หญิง') $tag_class = "tag-women";
+                        $tag_class = ($gender == 'ชาย') ? 'tag-men' : (($gender == 'หญิง') ? 'tag-women' : 'tag-default');
                 ?>
                     <div class="col-6 col-md-4">
                         <div class="card product-card">
@@ -246,7 +211,7 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
                             </div>
                         </div>
                     </div>
-                <?php } } else { echo '<div class="col-12 text-center py-5 opacity-50"><h4>ไม่พบสินค้า</h4></div>'; } ?>
+                <?php } } else { echo '<div class="col-12 text-center py-5 opacity-50"><h4>ไม่พบสินค้าในหมวดหมู่นี้</h4></div>'; } ?>
             </div>
         </div>
     </div>
@@ -264,15 +229,33 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
 <script>
 $(document).ready(function(){
     const isLoggedIn = <?php echo $is_logged_in ? 'true' : 'false'; ?>;
+
     function performSearch(query) {
-        if(query.length < 1) { $('#search_results').fadeOut(); return; }
+        if(query.length < 1) { 
+            $('#search_results').fadeOut(); 
+            return; 
+        }
         $.ajax({
-            url: "fetch_search.php", method: "POST", data: { query: query },
-            success: function(data) { $('#search_results').fadeIn().html(data); }
+            url: "fetch_search.php",
+            method: "POST",
+            data: { query: query },
+            success: function(data) {
+                $('#search_results').fadeIn().html(data);
+            }
         });
     }
-    $('#search_input').on('keyup focus', function(){ performSearch($(this).val()); });
-    $(document).click(function(e) { if (!$(e.target).closest('#searchForm').length) $('#search_results').fadeOut(); });
+
+    // แก้ไข: ให้ Search ทำงานทันทีที่ Focus และตอนพิมพ์
+    $('#search_input').on('focus', function(){ 
+        if($(this).val().length >= 1) performSearch($(this).val()); 
+    });
+    $('#search_input').on('keyup', function(){ 
+        performSearch($(this).val()); 
+    });
+
+    $(document).click(function(e) { 
+        if (!$(e.target).closest('#searchForm').length) $('#search_results').fadeOut(); 
+    });
 
     $('.add-to-cart-btn').click(function(e) {
         if (!isLoggedIn) {
