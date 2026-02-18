@@ -14,27 +14,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
     $address = mysqli_real_escape_string($conn, $_POST['address']);
     $total_amount = mysqli_real_escape_string($conn, $_POST['total_amount']);
     
-    // 3. จัดการไฟล์สลิปโอนเงิน (ถ้ามีการอัปโหลด)
-    $slip_name = ""; // ตั้งตัวแปรว่างไว้ก่อน
+    // 3. จัดการไฟล์สลิปโอนเงิน (เพิ่มระบบตรวจสอบสิทธิ์ Permission)
+    $slip_name = ""; 
+    $target_dir = "img/slips/"; 
+
     if (!empty($_FILES['payment_slip']['name'])) {
-        $target_dir = "img/slips/";
-        
-        // สร้างโฟลเดอร์ถ้ายังไม่มี
+        // ตรวจสอบและสร้างโฟลเดอร์หากยังไม่มี
         if (!is_dir($target_dir)) {
             mkdir($target_dir, 0777, true);
+            chmod($target_dir, 0777); // บังคับสิทธิ์เขียนไฟล์สำหรับ Linux Server
         }
-        
-        $ext = pathinfo($_FILES['payment_slip']['name'], PATHINFO_EXTENSION);
-        $slip_name = "slip_" . $u_id . "_" . time() . "." . $ext;
-        $target_file = $target_dir . $slip_name;
 
-        if (!move_uploaded_file($_FILES['payment_slip']['tmp_name'], $target_file)) {
-            echo "<script>alert('ไม่สามารถอัปโหลดไฟล์สลิปได้'); window.history.back();</script>";
+        $ext = pathinfo($_FILES['payment_slip']['name'], PATHINFO_EXTENSION);
+        $new_name = "slip_" . $u_id . "_" . time() . "." . $ext;
+        $target_file = $target_dir . $new_name;
+
+        if (move_uploaded_file($_FILES['payment_slip']['tmp_name'], $target_file)) {
+            $slip_name = $new_name;
+            chmod($target_file, 0644); // ตั้งสิทธิ์ให้อ่านไฟล์ได้ปกติหลังจากอัปโหลด
+        } else {
+            // หากฟังก์ชัน move_uploaded_file ทำงานล้มเหลว (Check Permission)
+            echo "<script>
+                alert('ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาตรวจสอบ Permission ของโฟลเดอร์ img/slips/'); 
+                window.history.back();
+            </script>";
             exit();
         }
     }
 
-    // 4. ดึงสินค้าในตะกร้ามาทำเป็นข้อความ
+    // 4. ดึงสินค้าในตะกร้ามาทำเป็นข้อความเพื่อเก็บประวัติ
     $product_list = [];
     if (isset($_SESSION['cart'])) {
         foreach ($_SESSION['cart'] as $id => $qty) {
@@ -56,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
     </head>
     <body>";
 
-    // 5. บันทึกข้อมูลลงตาราง orders (เพิ่มคอลัมน์ u_id และ o_slip)
+    // 5. บันทึกข้อมูลลงตาราง orders (ตรวจสอบว่ามีคอลัมน์ u_id และ o_slip ใน DB หรือยัง)
     $sql_order = "INSERT INTO orders (u_id, o_name, o_phone, o_address, o_total, o_status, o_date, o_product, o_slip) 
                   VALUES ('$u_id', '$fullname', '$phone', '$address', '$total_amount', 'รอดำเนินการ', NOW(), '$o_product', '$slip_name')";
     
@@ -67,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
         echo "<script>
             Swal.fire({
                 title: 'สั่งซื้อสำเร็จ!',
-                text: 'เราได้รับคำสั่งซื้อและหลักฐานการโอนเงินเรียบร้อยแล้ว',
+                text: 'เราได้รับคำสั่งซื้อและหลักฐานของคุณเรียบร้อยแล้ว',
                 icon: 'success',
                 confirmButtonColor: '#e12128',
                 confirmButtonText: 'ตกลง'
@@ -79,8 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
         $error_msg = mysqli_error($conn);
         echo "<script>
             Swal.fire({
-                title: 'เกิดข้อผิดพลาด',
-                text: 'ไม่สามารถบันทึกข้อมูลได้: $error_msg',
+                title: 'เกิดข้อผิดพลาดทางฐานข้อมูล',
+                text: '$error_msg',
                 icon: 'error'
             }).then(() => {
                 window.history.back();
