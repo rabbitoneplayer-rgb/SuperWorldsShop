@@ -43,26 +43,25 @@ $result = mysqli_query($conn, $sql);
         .btn-action { width: 38px; height: 38px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; transition: 0.3s; border: none; }
         .btn-edit { background: #f0f7ff; color: #007bff; }
         .btn-del { background: #fff5f5; color: #dc3545; }
-        
-        /* สไตล์สำหรับปุ่ม Home */
-        .btn-home { background: var(--ss-dark); color: white; border-radius: 50px; padding: 10px 25px; font-weight: 600; text-decoration: none; transition: 0.3s; display: inline-flex; align-items: center; gap: 8px; }
-        .btn-home:hover { background: #333; color: white; transform: translateX(-5px); }
     </style>
 </head>
 <body>
 
 <div class="container my-5">
     <div class="row align-items-center mb-5">
-        <div class="col-lg-6">
-            <div class="d-flex align-items-center gap-3">
-                <a href="index.php" class="btn-home"><i class="fas fa-home"></i> กลับหน้าหลัก</a>
-                <h2 class="fw-bold m-0 text-dark">จัดการสต็อกสินค้า</h2>
-            </div>
+        <div class="col-lg-6 col-md-12">
+            <h2 class="fw-bold m-0 text-dark">📦 ระบบจัดการสต็อกสินค้า</h2>
+            <p class="text-muted small mb-0">จัดการรายการสินค้า หมวดหมู่ และคลังสินค้าทั้งหมด</p>
         </div>
-        <div class="col-lg-6 text-lg-end mt-3 mt-lg-0">
-            <button class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addProductModal">
-                <i class="fas fa-plus me-2"></i>เพิ่มสินค้าใหม่
-            </button>
+        <div class="col-lg-6 col-md-12 text-lg-end mt-4 mt-lg-0">
+            <div class="d-flex flex-wrap justify-content-lg-end gap-2">
+                <a href="index.php" class="btn btn-outline-dark rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="fas fa-home me-2"></i>กลับหน้าหลัก
+                </a>
+                <button class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                    <i class="fas fa-plus me-2"></i>เพิ่มสินค้าใหม่
+                </button>
+            </div>
         </div>
     </div>
 
@@ -92,7 +91,7 @@ $result = mysqli_query($conn, $sql);
                         <td class="text-center"><span class="badge bg-light text-dark"><?php echo $row['p_category']; ?></span></td>
                         <td class="text-center"><span class="badge badge-cat <?php echo $tag_class; ?>"><?php echo $gender; ?></span></td>
                         <td class="text-end pe-4">
-                            <button class="btn-action btn-edit me-1" onclick="editProduct(<?php echo $row['p_id']; ?>, '<?php echo addslashes($row['p_name']); ?>', '<?php echo $row['p_brand']; ?>', <?php echo $row['p_price']; ?>, '<?php echo $row['p_category']; ?>', '<?php echo $gender; ?>')">
+                            <button class="btn-action btn-edit me-1" onclick="editProduct(<?php echo $row['p_id']; ?>, '<?php echo addslashes($row['p_name']); ?>', '<?php echo addslashes($row['p_brand']); ?>', <?php echo $row['p_price']; ?>, '<?php echo $row['p_category']; ?>', '<?php echo $gender; ?>')">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button class="btn-action btn-del" onclick="deleteProduct(<?php echo $row['p_id']; ?>)">
