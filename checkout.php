@@ -112,14 +112,20 @@ $qr_url = "https://promptpay.io/$pp_id/$grand_total.png";
                             <i class="fas fa-check-circle text-danger fs-4 check-icon"></i>
                         </div>
 
-                        <div id="qr_container">
+                        <div id="qr_container" style="display: block;">
                             <div class="mb-3">
-                                <img src="https://promptpay.io/static/img/promptpay_logo.png" height="40" class="mb-2" alt="PromptPay Logo">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c5/PromptPay-logo.png" 
+                                     height="45" 
+                                     class="mb-2" 
+                                     alt="PromptPay Logo"
+                                     onerror="this.src='https://promptpay.io/static/img/promptpay_logo.png'">
+                                
                                 <p class="small text-muted mb-3">สแกนด้วย Mobile Banking ทุกธนาคาร</p>
+                                
                                 <img src="<?php echo $qr_url; ?>" class="qr-img border shadow-sm" alt="Payment QR Code">
                             </div>
-                            <div class="alert alert-warning py-2 small mb-0 rounded-4">
-                                <i class="fas fa-info-circle me-1"></i> เมื่อสแกนจ่ายสำเร็จ กรุณากดยืนยันด้านล่าง
+                            <div class="alert alert-warning py-2 small mb-0 rounded-4" style="background-color: #fff9db; border-color: #fff3bf;">
+                                <i class="fas fa-info-circle me-1 text-warning"></i> เมื่อสแกนจ่ายสำเร็จ กรุณากดยืนยันด้านล่าง
                             </div>
                         </div>
                     </label>
@@ -159,7 +165,7 @@ $qr_url = "https://promptpay.io/$pp_id/$grand_total.png";
                             <img src="<?php echo $row['p_image']; ?>" class="w-100 h-100 object-fit-contain" onerror="this.src='https://placehold.co/100x100'">
                         </div>
                         <div class="flex-grow-1">
-                            <h6 class="fw-bold mb-0 small"><?php echo $row['p_name']; ?></h6>
+                            <h6 class="fw-bold mb-0 small" style="display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;"><?php echo $row['p_name']; ?></h6>
                             <small class="text-muted">x<?php echo $qty; ?></small>
                         </div>
                         <div class="text-end">
@@ -190,20 +196,23 @@ $qr_url = "https://promptpay.io/$pp_id/$grand_total.png";
             this.classList.add('active');
             this.querySelector('.check-icon').classList.replace('text-muted', 'text-danger');
 
-            // แสดง QR Code เฉพาะเมื่อเลือก 'โอนเงิน / QR'
+            // แสดง/ซ่อน QR Code ตามการเลือก
             qrContainer.style.display = (this.getAttribute('for') === 'pay_transfer') ? 'block' : 'none';
         });
     });
 
-    // ตรวจสอบเบอร์โทร
+    // ตรวจสอบเบอร์โทรให้พิมพ์ได้เฉพาะตัวเลข
     document.getElementById('phone').addEventListener('input', function(e) {
         this.value = this.value.replace(/[^0-9]/g, '');
     });
 
+    // Form Validation
     document.getElementById('checkoutForm').addEventListener('submit', function(e) {
-        if (document.getElementById('phone').value.length !== 10) {
+        const phone = document.getElementById('phone');
+        if (phone.value.length !== 10) {
             e.preventDefault();
             document.getElementById('phoneError').style.display = 'block';
+            phone.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     });
 </script>
