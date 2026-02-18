@@ -9,12 +9,14 @@ if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] != 1) {
 
 $act = $_GET['act'] ?? '';
 
-// --- 1. เพิ่มสินค้าใหม่ ---
+// --- 1. เพิ่มสินค้าใหม่ (รองรับ p_gender) ---
 if ($act == 'add') {
     $p_name = mysqli_real_escape_string($conn, $_POST['p_name']);
     $p_brand = mysqli_real_escape_string($conn, $_POST['p_brand']);
     $p_price = $_POST['p_price'];
     $p_category = $_POST['p_category'];
+    // เพิ่มการรับค่าเพศจากฟอร์ม
+    $p_gender = mysqli_real_escape_string($conn, $_POST['p_gender'] ?? 'Unisex');
     $p_detail = mysqli_real_escape_string($conn, $_POST['p_detail'] ?? '');
 
     if (!empty($_FILES['p_image']['name'])) {
@@ -25,8 +27,9 @@ if ($act == 'add') {
         if (!is_dir('img')) { mkdir('img', 0777, true); }
 
         if (move_uploaded_file($_FILES['p_image']['tmp_name'], $target)) {
-            $sql = "INSERT INTO products (p_name, p_brand, p_price, p_category, p_image, p_detail) 
-                    VALUES ('$p_name', '$p_brand', '$p_price', '$p_category', '$target', '$p_detail')";
+            // เพิ่ม p_gender เข้าไปในคำสั่ง INSERT
+            $sql = "INSERT INTO products (p_name, p_brand, p_price, p_category, p_gender, p_image, p_detail) 
+                    VALUES ('$p_name', '$p_brand', '$p_price', '$p_category', '$p_gender', '$target', '$p_detail')";
             mysqli_query($conn, $sql);
         }
     }
@@ -34,13 +37,15 @@ if ($act == 'add') {
     exit();
 }
 
-// --- 2. แก้ไขข้อมูลสินค้า ---
+// --- 2. แก้ไขข้อมูลสินค้า (รองรับ p_gender) ---
 if ($act == 'edit_full') {
     $p_id = mysqli_real_escape_string($conn, $_REQUEST['id']);
     $p_name = mysqli_real_escape_string($conn, $_REQUEST['name']);
     $p_brand = mysqli_real_escape_string($conn, $_REQUEST['brand']);
     $p_price = (int)$_REQUEST['price'];
     $p_category = mysqli_real_escape_string($conn, $_REQUEST['category']);
+    // เพิ่มการรับค่าเพศที่ส่งมาจาก URL (GET)
+    $p_gender = mysqli_real_escape_string($conn, $_REQUEST['gender'] ?? 'Unisex');
 
     if (!empty($_FILES['p_image']['name'])) {
         $res = mysqli_query($conn, "SELECT p_image FROM products WHERE p_id = '$p_id'");
@@ -53,10 +58,12 @@ if ($act == 'edit_full') {
         $target = "img/" . $new_name;
         
         if (move_uploaded_file($_FILES['p_image']['tmp_name'], $target)) {
-            $sql = "UPDATE products SET p_name = '$p_name', p_brand = '$p_brand', p_price = '$p_price', p_category = '$p_category', p_image = '$target' WHERE p_id = '$p_id'";
+            // อัปเดตพร้อมรูปภาพและเพศ
+            $sql = "UPDATE products SET p_name = '$p_name', p_brand = '$p_brand', p_price = '$p_price', p_category = '$p_category', p_gender = '$p_gender', p_image = '$target' WHERE p_id = '$p_id'";
         }
     } else {
-        $sql = "UPDATE products SET p_name = '$p_name', p_brand = '$p_brand', p_price = '$p_price', p_category = '$p_category' WHERE p_id = '$p_id'";
+        // อัปเดตเฉพาะข้อมูลและเพศ (ไม่เปลี่ยนรูป)
+        $sql = "UPDATE products SET p_name = '$p_name', p_brand = '$p_brand', p_price = '$p_price', p_category = '$p_category', p_gender = '$p_gender' WHERE p_id = '$p_id'";
     }
     
     mysqli_query($conn, $sql);
@@ -137,7 +144,6 @@ if ($act == 'upload_more') {
     $p_id = mysqli_real_escape_string($conn, $_POST['p_id']);
     
     if (!empty($_FILES['p_image']['name'])) {
-        // เช็คช่องที่ยังว่างในฐานข้อมูล
         $res = mysqli_query($conn, "SELECT p_img2, p_img3, p_img4, p_img5 FROM products WHERE p_id = '$p_id'");
         $row = mysqli_fetch_array($res);
         
