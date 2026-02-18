@@ -2,7 +2,7 @@
 session_start(); 
 include_once("connectdb.php"); 
 
-// รับค่าหมวดหมู่และคำค้นหา
+// รับค่าหมวดหมู่และคำค้นหา (ทำความสะอาดข้อมูลเบื้องต้น)
 $cat = isset($_GET['cat']) ? mysqli_real_escape_string($conn, $_GET['cat']) : '';
 $search = isset($_GET['q']) ? mysqli_real_escape_string($conn, $_GET['q']) : '';
 
@@ -14,6 +14,46 @@ if (isset($_SESSION['cart'])) {
 
 $is_logged_in = isset($_SESSION['user_id']);
 $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1);
+
+// --- 1. ส่วน Logic การดึงข้อมูลสินค้า (ฉบับปรับปรุงใหม่ให้ฉลาดขึ้น) ---
+$where_clause = " WHERE 1 ";
+
+if ($search) {
+    $where_clause .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%' OR p_category LIKE '%$search%') ";
+}
+
+if ($cat) {
+    // จัดการหมวดหมู่ รองเท้า
+    if (strpos($cat, 'รองเท้า') !== false) {
+        $where_clause .= " AND p_category LIKE '%รองเท้า%' ";
+        if (strpos($cat, 'ชาย') !== false) {
+            $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') ";
+        } elseif (strpos($cat, 'หญิง') !== false) {
+            $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') ";
+        }
+    } 
+    // จัดการหมวดหมู่ เสื้อผ้า
+    elseif (strpos($cat, 'เสื้อผ้า') !== false) {
+        $where_clause .= " AND p_category LIKE '%เสื้อผ้า%' ";
+        if (strpos($cat, 'ชาย') !== false) {
+            $where_clause .= " AND (p_gender = 'ชาย' OR p_gender = 'ผู้ชาย') ";
+        } elseif (strpos($cat, 'หญิง') !== false) {
+            $where_clause .= " AND (p_gender = 'หญิง' OR p_gender = 'ผู้หญิง') ";
+        }
+    } 
+    // จัดการ Tag อื่นๆ ที่พิมพ์เพิ่มเองอิสระ หรือเลือกจาก Gear
+    else {
+        $where_clause .= " AND (p_category LIKE '%$cat%' OR p_gender LIKE '%$cat%') ";
+    }
+}
+
+// นำเงื่อนไขไปใช้ทั้งการนับจำนวน
+$count_res = mysqli_query($conn, "SELECT COUNT(*) as total FROM products " . $where_clause);
+$total_items = mysqli_fetch_array($count_res)['total'];
+
+// คำสั่ง SQL สำหรับดึงข้อมูลแสดงผล
+$sql = "SELECT * FROM products " . $where_clause . " ORDER BY p_id DESC";
+$result = mysqli_query($conn, $sql);
 ?>
 <!doctype html>
 <html lang="th">
@@ -40,20 +80,30 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
         .navbar { background-color: var(--ss-dark) !important; padding: 15px 0; border-bottom: 3px solid var(--ss-red); }
         .navbar-brand { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; }
 
-        /* --- Sidebar Category --- */
-        .cat-group { display: flex; flex-direction: column; gap: 5px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); max-height: calc(100vh - 150px); overflow-y: auto; }
+        /* --- Sidebar Category (จัดการเรื่องล้นหน้าจอ) --- */
+        .cat-group { display: flex; flex-direction: column; gap: 5px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); max-height: 80vh; overflow-y: auto; }
+        .cat-group::-webkit-scrollbar { width: 4px; }
+        .cat-group::-webkit-scrollbar-thumb { background: #eee; border-radius: 10px; }
         .cat-header { font-weight: 800; text-transform: uppercase; font-size: 0.75rem; color: #bbb; letter-spacing: 1.5px; margin-bottom: 10px; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px; }
         .filter-btn { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-radius: 12px; color: #555; text-decoration: none; font-size: 0.9rem; font-weight: 400; transition: 0.3s; }
         .filter-btn:hover { background: var(--ss-gray); color: var(--ss-red); transform: translateX(5px); }
         .filter-btn.active { background: var(--ss-dark); color: #fff; font-weight: 600; }
 
+        /* --- Search Bar --- */
+        .search-container { max-width: 800px; margin: 0 auto; position: relative; }
+        .search-input-group { background: white; border-radius: 50px; padding: 8px 8px 8px 25px; display: flex; align-items: center; border: 2px solid #eee; }
+        .search-input-group input { border: none; outline: none; flex: 1; font-size: 1rem; }
+        .btn-search { background: var(--ss-dark); color: white; border-radius: 50px; width: 45px; height: 45px; border: none; }
+        #search_results { width: 100%; display: none; background: white; z-index: 9990; box-shadow: 0 25px 60px rgba(0,0,0,0.2); position: absolute; margin-top: 15px; border-radius: 20px; overflow: hidden; }
+
         /* --- Product Card & Tags --- */
-        .product-card { border: none; border-radius: 25px; transition: 0.4s; background: #fff; height: 100%; border: 1px solid #f0f0f0; position: relative; }
+        .product-card { border: none; border-radius: 25px; transition: 0.4s; background: #fff; height: 100%; border: 1px solid #f0f0f0; position: relative; overflow: hidden; }
         .product-card:hover { transform: translateY(-10px); box-shadow: 0 25px 50px rgba(0,0,0,0.06); }
         .product-img-wrapper { padding: 30px; height: 260px; display: flex; align-items: center; justify-content: center; position: relative; }
         .product-img { max-height: 100%; max-width: 100%; object-fit: contain; }
         
-        .category-tag { position: absolute; top: 15px; left: 15px; padding: 4px 12px; border-radius: 50px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; z-index: 5; }
+        /* ปรับปรุง Tag สีขาวไม่ให้ล้น */
+        .category-tag { position: absolute; top: 15px; left: 15px; padding: 4px 12px; border-radius: 50px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; z-index: 5; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .tag-men { background: #111; color: #fff; }
         .tag-women { background: #ff4d94; color: #fff; }
         .tag-default { background: #eee; color: #333; }
@@ -63,10 +113,6 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
         .btn-add-cart:hover { background: var(--ss-red); }
 
         footer { background: var(--ss-dark) !important; color: #888; padding: 60px 0; }
-
-        /* Custom Scrollbar for Sidebar */
-        .cat-group::-webkit-scrollbar { width: 5px; }
-        .cat-group::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -136,7 +182,6 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
                         <?php
                         $cat_query = mysqli_query($conn, "SELECT * FROM categories WHERE cat_group = '$key'");
                         while ($c_row = mysqli_fetch_array($cat_query)):
-                            // ส่งค่า cat ไปโดยใช้ชื่อ Tag ตรงๆ หรือแบบผสมตามที่คุณออกแบบ
                             $full_cat_name = ($key == 'GEAR') ? $c_row['cat_name'] : $label . $c_row['cat_name'];
                         ?>
                             <a href="index.php?cat=<?= urlencode($full_cat_name) ?>" class="filter-btn <?= ($cat == $full_cat_name) ? 'active' : '' ?>">
@@ -154,36 +199,6 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
         </div>
 
         <div class="col-lg-9">
-            <?php
-            // --- ปรับปรุง Logic การ Query ให้รองรับการกดเลือกหมวดหมู่ย่อย ---
-            $where_clause = " WHERE 1 ";
-            
-            if ($search) {
-                $where_clause .= " AND (p_name LIKE '%$search%' OR p_brand LIKE '%$search%' OR p_category LIKE '%$search%') ";
-            }
-            
-            if ($cat) {
-                // ตรวจสอบว่าเป็นหมวดหมู่พิเศษหรือไม่
-                if ($cat == 'รองเท้าชาย') {
-                    $where_clause .= " AND p_category LIKE '%รองเท้า%' AND p_gender = 'ชาย' ";
-                } elseif ($cat == 'รองเท้าหญิง') {
-                    $where_clause .= " AND p_category LIKE '%รองเท้า%' AND p_gender = 'หญิง' ";
-                } elseif ($cat == 'เสื้อผ้าชาย') {
-                    $where_clause .= " AND p_category LIKE '%เสื้อผ้า%' AND p_gender = 'ชาย' ";
-                } elseif ($cat == 'เสื้อผ้าหญิง') {
-                    $where_clause .= " AND p_category LIKE '%เสื้อผ้า%' AND p_gender = 'หญิง' ";
-                } else {
-                    // หากเป็น Tag ทั่วไปที่พิมพ์เพิ่มเอง ให้ค้นหาจาก p_category หรือ p_gender
-                    $where_clause .= " AND (p_category LIKE '%$cat%' OR p_gender LIKE '%$cat%') ";
-                }
-            }
-
-            // นับจำนวนรายการ
-            $count_sql = "SELECT COUNT(*) as total FROM products " . $where_clause;
-            $count_res = mysqli_query($conn, $count_sql);
-            $total_items = mysqli_fetch_array($count_res)['total'];
-            ?>
-
             <div class="d-flex justify-content-between align-items-end mb-4">
                 <h2 class="fw-bold m-0"><?php echo ($cat != '') ? htmlspecialchars($cat) : 'สินค้าทั้งหมด'; ?></h2>
                 <span class="text-muted small">พบ <?php echo $total_items; ?> รายการ</span>
@@ -191,13 +206,10 @@ $is_admin = (isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SE
 
             <div class="row g-4">
                 <?php
-                $sql = "SELECT * FROM products " . $where_clause . " ORDER BY p_id DESC";
-                $result = mysqli_query($conn, $sql);
-                
                 if(mysqli_num_rows($result) > 0) {
                     while($row = mysqli_fetch_array($result)) {
                         $gender = $row['p_gender'] ?? 'Unisex';
-                        $tag_class = ($gender == 'ชาย') ? 'tag-men' : (($gender == 'หญิง') ? 'tag-women' : 'tag-default');
+                        $tag_class = ($gender == 'ชาย' || $gender == 'ผู้ชาย') ? 'tag-men' : (($gender == 'หญิง' || $gender == 'ผู้หญิง') ? 'tag-women' : 'tag-default');
                 ?>
                     <div class="col-6 col-md-4">
                         <div class="card product-card">
@@ -256,11 +268,8 @@ $(document).ready(function(){
         });
     }
 
-    // แก้ไข: ให้ Search ทำงานทันทีที่ Focus และตอนพิมพ์
-    $('#search_input').on('focus', function(){ 
-        if($(this).val().length >= 1) performSearch($(this).val()); 
-    });
-    $('#search_input').on('keyup', function(){ 
+    // Search ทำงานทันทีที่ Focus และตอนพิมพ์
+    $('#search_input').on('focus keyup', function(){ 
         performSearch($(this).val()); 
     });
 
