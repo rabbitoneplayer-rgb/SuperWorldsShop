@@ -70,10 +70,50 @@ $result = mysqli_query($conn, $sql);
         .dropdown-item { padding: 12px 20px !important; border-radius: 12px !important; font-weight: 500; transition: 0.3s; color: #333 !important; text-decoration: none !important; }
         .dropdown-item:hover { background: var(--ss-gray) !important; color: var(--ss-red) !important; }
 
-        /* --- Search System --- */
-        .search-container { max-width: 1000px; margin: 0 auto; position: relative; z-index: 1050; }
-        .search-input-group { background: white; border-radius: 50px; padding: 10px 10px 10px 30px; display: flex; align-items: center; border: 2px solid #eee; transition: 0.3s; }
-        #search_results { width: 100%; display: none; background: white; z-index: 1040; box-shadow: 0 30px 60px rgba(0,0,0,0.2); position: absolute; top: 100%; left: 0; margin-top: 15px; border-radius: 25px; border: 1px solid #eee; padding: 25px; max-height: 550px; overflow-y: auto; }
+        /* --- ✨ แก้ไขใหม่: Search System ให้ยาวและสวยงามขึ้น --- */
+        .search-container { 
+            max-width: 1140px; 
+            margin: 0 auto; 
+            position: relative; 
+            z-index: 1050; 
+        }
+        .search-input-group { 
+            background: white; 
+            border-radius: 50px; 
+            padding: 12px 15px 12px 35px; 
+            display: flex; 
+            align-items: center; 
+            border: 2px solid #eee; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.02); 
+            transition: 0.3s;
+        }
+        .search-input-group:focus-within { 
+            border-color: var(--ss-red); 
+            box-shadow: 0 15px 35px rgba(225,33,40,0.07); 
+        }
+        .search-input-group input { 
+            border: none; 
+            outline: none; 
+            flex: 1; 
+            font-size: 1.15rem; 
+            font-weight: 300;
+        }
+        #search_results { 
+            width: 100%; 
+            display: none; 
+            background: white; 
+            z-index: 1040; 
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15); 
+            position: absolute; 
+            top: 100%; 
+            left: 0; 
+            margin-top: 20px; 
+            border-radius: 30px; 
+            border: 1px solid #f0f0f0; 
+            padding: 30px; 
+            max-height: 600px; 
+            overflow-y: auto; 
+        }
 
         /* --- Sidebar & Product Cards Fix --- */
         .cat-group { display: flex; flex-direction: column; gap: 5px; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); max-height: 75vh; overflow-y: auto; }
