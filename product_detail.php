@@ -123,7 +123,7 @@ $images = array_filter([$row['p_image'], $row['p_img2'] ?? '', $row['p_img3'] ??
                             </div>
                         <?php endforeach; ?>
                         <?php if($is_admin): ?>
-                            <div class="opt-btn text-danger border-danger" style="border-style: dashed !important;" onclick="addOption()"><i class="fas fa-plus"></i></div>
+                            <div class="opt-btn text-danger border-danger" style="border-style: dashed !important;" onclick="addOption()"><i class="fas fa-plus-circle"></i></div>
                         <?php endif; ?>
                     </div>
                     <input type="hidden" id="selected_option" value="">
@@ -153,11 +153,11 @@ $images = array_filter([$row['p_image'], $row['p_img2'] ?? '', $row['p_img3'] ??
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content shadow-lg" style="border-radius: 30px; border: none;">
             <div class="modal-header border-0 px-4 pt-4">
-                <h5 class="fw-bold m-0">อัปโหลดรูปภาพสินค้าใหม่</h5>
+                <h5 class="fw-bold m-0">จัดการรูปภาพสินค้า</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
-                <p class="text-muted small mb-4">* เลือกเฉพาะรูปที่ต้องการเปลี่ยน รูปที่ไม่เลือกจะยังคงเป็นรูปเดิม</p>
+            <div class="modal-body p-4 pt-0">
+                <p class="text-muted small mb-4">* เลือกไฟล์เพื่อเปลี่ยนรูป หรือกดกากบาทสีแดงเพื่อลบรูปภาพนั้นๆ ออก</p>
                 <form id="imgForm" enctype="multipart/form-data">
                     <input type="hidden" name="p_id" value="<?php echo $p_id; ?>">
                     <div class="row g-3">
@@ -165,8 +165,15 @@ $images = array_filter([$row['p_image'], $row['p_img2'] ?? '', $row['p_img3'] ??
                         $fields = ['p_image'=>'รูปหลัก', 'p_img2'=>'รูปที่ 2', 'p_img3'=>'รูปที่ 3', 'p_img4'=>'รูปที่ 4', 'p_img5'=>'รูปที่ 5'];
                         foreach($fields as $field => $title): ?>
                         <div class="col-md-6">
-                            <div class="p-3 border rounded-4 bg-light">
+                            <div class="p-3 border rounded-4 bg-light position-relative">
                                 <label class="fw-bold small mb-2 d-block"><?php echo $title; ?></label>
+                                
+                                <?php if(!empty($row[$field])): ?>
+                                    <div class="admin-badge-del" onclick="deleteSingleImage('<?php echo $field; ?>')">
+                                        <i class="fas fa-times"></i>
+                                    </div>
+                                <?php endif; ?>
+
                                 <div class="d-flex align-items-center gap-3">
                                     <img src="<?php echo (!empty($row[$field])) ? $row[$field] : 'https://placehold.co/100x100?text=No+Img'; ?>" class="img-edit-preview" id="prev-<?php echo $field; ?>">
                                     <input type="file" name="<?php echo $field; ?>" class="form-control form-control-sm" onchange="previewImage(this, 'prev-<?php echo $field; ?>')">
@@ -239,10 +246,34 @@ function uploadImages() {
         processData: false,
         success: function(res) {
             if(res.includes('success')) {
-                Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1500 }).then(() => location.reload());
+                Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1000 }).then(() => location.reload());
             } else {
                 Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: res });
             }
+        }
+    });
+}
+
+// ฟังก์ชันลบรูปภาพทีละใบ (AJAX) 
+function deleteSingleImage(field) {
+    Swal.fire({
+        title: 'ยืนยันการลบรูปภาพ?',
+        text: "รูปภาพนี้จะถูกลบออกจาก Server ถาวร",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e12128',
+        cancelButtonColor: '#666',
+        confirmButtonText: 'ใช่, ลบเลย!',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.post('admin_action.php?act=delete_image', { p_id: '<?php echo $p_id; ?>', field: field }, (res) => {
+                if(res.includes('success')) {
+                    Swal.fire({ icon: 'success', title: 'ลบรูปภาพสำเร็จ', showConfirmButton: false, timer: 1000 }).then(() => location.reload());
+                } else {
+                    Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: res });
+                }
+            });
         }
     });
 }
