@@ -163,4 +163,35 @@ if ($act == 'delete_user') {
     header("Location: admin_customers.php");
     exit();
 }
+// --- 9. ลบรูปภาพเฉพาะฟิลด์ (AJAX) ---
+if ($act == 'delete_image') {
+    // รับค่า ID สินค้า และชื่อฟิลด์ที่ต้องการลบ (เช่น p_img2)
+    $p_id = mysqli_real_escape_string($conn, $_POST['p_id']);
+    $field = mysqli_real_escape_string($conn, $_POST['field']);
+    
+    // ตรวจสอบชื่อฟิลด์เพื่อความปลอดภัย ป้องกันการส่งค่ามั่วมาลบข้อมูลส่วนอื่น
+    $allowed_fields = ['p_image', 'p_img2', 'p_img3', 'p_img4', 'p_img5'];
+    if (!in_array($field, $allowed_fields)) { 
+        exit("Invalid field name"); 
+    }
+
+    // 1. ดึงข้อมูลรูปภาพปัจจุบันจากฐานข้อมูล
+    $res = mysqli_query($conn, "SELECT $field FROM products WHERE p_id = '$p_id'");
+    $row = mysqli_fetch_array($res);
+    
+    // 2. ถ้ามีไฟล์จริงอยู่ใน Server ให้สั่งลบทิ้ง (Unlink) เพื่อประหยัดพื้นที่
+    if (!empty($row[$field]) && file_exists($row[$field])) {
+        unlink($row[$field]);
+    }
+
+    // 3. อัปเดตค่าในฐานข้อมูลในฟิลด์นั้นให้เป็นค่าว่าง
+    $sql = "UPDATE products SET $field = '' WHERE p_id = '$p_id'";
+    if (mysqli_query($conn, $sql)) {
+        echo 'success';
+    } else {
+        echo 'Database Error: ' . mysqli_error($conn);
+    }
+    exit();
+}
 ?>
+
